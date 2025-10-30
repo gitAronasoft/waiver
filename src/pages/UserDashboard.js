@@ -15,7 +15,6 @@ function UserDashboard() {
   const phone = useSelector((state) => state.waiverSession.phone);
   const [waivers, setWaivers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isVerified, setIsVerified] = useState(true);
 
   useEffect(() => {
     if (!phone) {
@@ -35,7 +34,6 @@ function UserDashboard() {
         `${BACKEND_URL}/api/waivers/customer-dashboard?phone=${phone}`
       );
       setWaivers(response.data.waivers || []);
-      setIsVerified(response.data.isVerified || false);
     } catch (error) {
       console.error("Error fetching customer dashboard:", error);
       toast.error("We couldn't load your visit history. Please refresh the page or try again later.");

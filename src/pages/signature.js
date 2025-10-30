@@ -17,13 +17,13 @@ function Signature() {
   const sigPadRef = useRef();
 
   const [signatureImage, setSignatureImage] = useState(null);
-  const [initials, setInitials] = useState("");
   const [customerData, setCustomerData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [minorErrors, setMinorErrors] = useState({});
   const [showSignatureConfirmDialog, setShowSignatureConfirmDialog] = useState(false);
   const [originalSignature, setOriginalSignature] = useState(null);
+  const [userModifiedSignature, setUserModifiedSignature] = useState(false);
 
   const customerType = useSelector((state) => state.waiverSession.flowType) || "existing";
   const phone = useSelector((state) => state.waiverSession.phone);
@@ -99,6 +99,7 @@ function Signature() {
                 if (sigPadRef.current) {
                   try {
                     sigPadRef.current.fromDataURL(signatureData);
+                    setUserModifiedSignature(false); // Reset flag when loading existing signature
                   } catch (error) {
                     console.error("Failed to pre-fill signature:", error);
                   }
@@ -183,6 +184,7 @@ function Signature() {
   const handleClearSignature = () => {
     sigPadRef.current.clear();
     setSignatureImage(null);
+    setUserModifiedSignature(true); // Mark as modified when user clears
   };
 
   // Function to proceed with signature submission after confirmation
@@ -210,6 +212,7 @@ function Signature() {
     if (originalSignature && sigPadRef.current) {
       try {
         sigPadRef.current.fromDataURL(originalSignature);
+        setUserModifiedSignature(false); // Reset flag when restoring original
       } catch (error) {
         console.error("Failed to restore original signature:", error);
       }
@@ -365,7 +368,7 @@ function Signature() {
     // Check if this is an existing user viewing a completed waiver
     // A completed waiver has originalSignature (loaded from snapshot)
     const isViewingCompletedWaiver = originalSignature !== null;
-    const signatureHasChanged = isViewingCompletedWaiver && currentSignature && currentSignature !== originalSignature;
+    const signatureHasChanged = isViewingCompletedWaiver && userModifiedSignature;
     
     // Show confirmation dialog if user is modifying a completed waiver's signature
     if (isViewingCompletedWaiver && signatureHasChanged && !createNewWaiver) {
@@ -413,12 +416,7 @@ function formatPhone(phone = "") {
     // Clear localStorage when going back
     localStorage.removeItem("signatureForm");
     
-    // If in viewMode, go back to my waivers instead of confirm-info
-    if (viewMode) {
-      navigate("/my-waivers", { replace: true });
-      return;
-    }
-    
+    // Always navigate back to the previous step in the flow
     if (customerType === "new") {
       navigate("/verify-otp", { replace: true });
     } else {
@@ -708,6 +706,7 @@ AND ADMINISTRATORS MAY HAVE AGAINST SKATE & PLAY INC. </p>
               }}>
                 <SignaturePad
                   ref={sigPadRef}
+                  onBegin={() => setUserModifiedSignature(true)}
                   canvasProps={{ 
                     width: 600, 
                     height: 200, 

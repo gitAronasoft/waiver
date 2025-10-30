@@ -55,8 +55,8 @@ const sendFeedback = async (req, res) => {
           port: process.env.SMTP_PORT || 587,
           secure: true,
           auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
           },
           tls: { rejectUnauthorized: false }
         });
@@ -103,8 +103,8 @@ const sendFeedback = async (req, res) => {
         `;
 
         await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: process.env.EMAIL_USER, 
+          from: process.env.SMTP_USER,
+          to: process.env.SMTP_USER, 
           subject: `Customer Feedback - ${customer.first_name} ${customer.last_name}`,
           html: htmlTemplate
         });

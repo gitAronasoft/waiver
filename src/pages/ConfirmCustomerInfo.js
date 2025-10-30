@@ -337,7 +337,7 @@ function ConfirmCustomerInfo() {
           send_otp: false, // Don't send OTP for returning users
         };
         
-        const response = await axios.post(
+        await axios.post(
           `${BACKEND_URL}/api/waivers`,
           createWaiverPayload,
         );

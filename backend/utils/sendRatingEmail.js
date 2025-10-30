@@ -9,8 +9,8 @@ async function sendRatingEmail(customer) {
     port: process.env.SMTP_PORT || 587,
     secure: true,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
     tls: { rejectUnauthorized: false },
   });
@@ -62,7 +62,7 @@ async function sendRatingEmail(customer) {
   `;
 
   await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+    from: process.env.SMTP_USER,
     to: customer.email,
     subject: "How Was Your Visit? ⭐",
     html: htmlTemplate,

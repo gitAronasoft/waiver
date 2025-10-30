@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import axios from "../../utils/axios";
 import { toast } from "react-toastify";
 import { BACKEND_URL } from '../../config';
+import { login } from "../../store/slices/authSlice";
 
 function ResetPasswordForm() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [form, setForm] = useState({
     password: "",
@@ -47,8 +50,11 @@ function ResetPasswordForm() {
 
       toast.success(response.data.message || "Password updated successfully!");
 
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("staff", JSON.stringify(response.data.staff));
+      // Dispatch to Redux instead of localStorage
+      dispatch(login({
+        token: response.data.token,
+        staff: response.data.staff
+      }));
 
       navigate("/admin/home");
     } catch (err) {

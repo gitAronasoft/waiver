@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import axios from "../../utils/axios";
 import { toast } from "react-toastify";
 import Header from "./components/header";
 import { BACKEND_URL } from '../../config';
+import { logout } from "../../store/slices/authSlice";
 
 function ChangePassword() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [form, setForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -14,23 +17,14 @@ function ChangePassword() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [staff, setStaff] = useState(null);
+  const staff = useSelector((state) => state.auth.staff);
 
   useEffect(() => {
-    const staffData = localStorage.getItem("staff");
-    if (!staffData) {
+    if (!staff) {
       toast.error("Please login to continue");
       navigate("/admin/login");
-      return;
     }
-    try {
-      setStaff(JSON.parse(staffData));
-    } catch (error) {
-      console.error("Error parsing staff data:", error);
-      toast.error("Session error. Please login again.");
-      navigate("/admin/login");
-    }
-  }, [navigate]);
+  }, [navigate, staff]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -110,8 +104,7 @@ function ChangePassword() {
 
       // Clear session and redirect to login after password change
       setTimeout(() => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("staff");
+        dispatch(logout());
         navigate("/admin/login");
       }, 2000);
     } catch (err) {

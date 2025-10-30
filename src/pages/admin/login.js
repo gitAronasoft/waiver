@@ -45,15 +45,11 @@ function LoginPage() {
         password,
       });
 
-      // Save to Redux first
+      // Save to Redux (redux-persist will automatically sync to localStorage)
       dispatch(login({
         token: response.data.token,
         staff: response.data.staff
       }));
-
-      // Save to localStorage
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("staff", JSON.stringify(response.data.staff));
 
       console.log('User logged in with role:', response.data.staff.role);
 

@@ -55,10 +55,31 @@ The system follows a "one user per phone number" database architecture with hist
 
 ## External Dependencies
 
--   **Twilio**: Used for sending SMS-based One-Time Passwords (OTPs) for customer phone verification.
--   **Mailchimp**: Integrates with the `createWaiver` API to automatically add new customers to a marketing email list.
+-   **Twilio**: Used for sending SMS-based One-Time Passwords (OTPs) for customer phone verification. Phone numbers MUST be in E.164 format (+country_code+number) for reliable SMS delivery.
+-   **Mailchimp**: Integrates with the `createWaiver` API to automatically add new customers to a marketing email list. Checks for existing subscribers using MD5 hash of lowercase email to prevent duplicates.
 -   **Nodemailer**: Utilized for sending email notifications, including password reset links for staff, feedback notifications to admins, and new staff account setup emails.
 -   **Node-Cron**: Schedules automated tasks, such as sending rating requests to customers 24 hours after their waiver signing.
 -   **React Signature Canvas**: Frontend library for capturing digital signatures.
 -   **Axios**: HTTP client for making API requests from the frontend.
 -   **html2canvas**: Used in PDF generation to convert HTML elements to canvas images.
+
+## Recent Changes (October 30, 2025)
+
+### Twilio OTP E.164 Phone Formatting Fix
+- **waiverController.js**: Updated `createWaiver` to ensure all OTP phone numbers include country code with leading "+" (E.164 format). Uses `cc_cell_phone || ${country_code}${cell_phone}` and adds "+" if missing.
+- **authController.js**: Updated `sendOtp` to fetch user's `country_code` from database, construct full phone number as `cell_phone || ${userCountryCode}${phone}`, and ensure leading "+" for Twilio compliance.
+- **Impact**: Fixes OTP SMS delivery failures for both new waiver creation and existing customer login flows across all country codes.
+
+### Mailchimp Integration Enhancement
+- **Moved**: Mailchimp subscription moved from `acceptRules` to `createWaiver` function to ensure customers are subscribed immediately upon waiver creation.
+- **Duplicate Prevention**: Added subscriber existence check using MD5 hash of lowercase email before POST to prevent "Member Exists" errors. Gracefully skips if already subscribed.
+- **Impact**: Eliminates duplicate subscription errors and ensures all customers are properly added to marketing list.
+
+### Redux State Management Standardization
+- **Admin Pages**: Updated all admin pages (login.js, ResetPassword.js, home.js, AddStaff.js, UpdateStaff.js, ChangePassword.js) to use Redux `auth` slice via selectors instead of direct localStorage access.
+- **Consistency**: All authentication state (token, staff data) now managed exclusively through Redux with `redux-persist` handling localStorage layer.
+- **Impact**: Cleaner code, centralized state management, easier debugging, and consistent auth patterns across admin dashboard.
+
+### Admin Profile Image Upload Path Fix
+- **staffRoutes.js**: Changed multer upload path from `'uploads/profile/'` to `'public/uploads/profile'` for admin profile images.
+- **Impact**: Profile images now stored in public directory for direct browser access without additional routing.

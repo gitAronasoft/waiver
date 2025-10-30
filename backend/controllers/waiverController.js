@@ -171,16 +171,16 @@ const createWaiver = async (req, res) => {
           `📝 OTP stored in database for user - Phone: ${cell_phone}, OTP: ${otp}`,
         );
 
-        // Send OTP via SMS
+        // Send OTP via SMS - Format phone to E.164 with leading + for Twilio
         let formattedPhone = cc_cell_phone || `${country_code}${cell_phone}`;
-        if (!formattedPhone.startsWith("+")) {
-          formattedPhone = `+1${formattedPhone}`;
+        if (!formattedPhone.startsWith('+')) {
+          formattedPhone = `+${formattedPhone}`;
         }
 
         try {
           await client.messages.create({
             body: `Your verification code is ${otp} for your Skate & Play waiver. Enjoy your roller skating session.`,
-            from: process.env.TWILIO_PHONE_NUMBER,
+            messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
             to: formattedPhone,
           });
           console.log(
@@ -205,6 +205,27 @@ const createWaiver = async (req, res) => {
         );
         // Don't fail the waiver creation if OTP fails
       }
+    }
+
+    // MAILCHIMP INTEGRATION - Auto-subscribe to mailing list on new waiver signup
+    // Check if subscriber exists first, only subscribe if new
+    try {
+      await addToMailchimp(
+        email,
+        cell_phone,
+        first_name,
+        last_name,
+        dob,
+        city,
+        address,
+      );
+      console.log(`✅ Mailchimp subscription processed for ${email}`);
+    } catch (mailchimpError) {
+      console.error(
+        "⚠️ Mailchimp integration error:",
+        mailchimpError.message,
+      );
+      // Don't fail the waiver creation if Mailchimp fails
     }
 
     await connection.commit();
@@ -848,32 +869,6 @@ const acceptRules = async (req, res) => {
       "UPDATE waivers SET rules_accepted = 1, completed = 1 WHERE id = ?",
       [waiverId],
     );
-
-    // MAILCHIMP INTEGRATION - Auto-subscribe to mailing list
-    const [customers] = await db.query("SELECT * FROM users WHERE id = ?", [
-      userId,
-    ]);
-    if (customers.length > 0) {
-      const customer = customers[0];
-      try {
-        await addToMailchimp(
-          customer.email,
-          customer.cell_phone,
-          customer.first_name,
-          customer.last_name,
-          customer.dob,
-          customer.city,
-          customer.address,
-        );
-        console.log(`✅ Customer ${customer.email} added to Mailchimp`);
-      } catch (mailchimpError) {
-        console.error(
-          "⚠️ Mailchimp integration error:",
-          mailchimpError.message,
-        );
-        // Don't fail the waiver completion if Mailchimp fails
-      }
-    }
 
     res.json({
       success: true,

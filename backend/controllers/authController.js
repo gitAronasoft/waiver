@@ -28,9 +28,9 @@ const sendOtp = async (req, res) => {
       });
     }
 
-    // Check if user exists
+    // Check if user exists and get their country code
     const [results] = await db.query(
-      'SELECT id FROM users WHERE cell_phone = ?', 
+      'SELECT id, country_code FROM users WHERE cell_phone = ?', 
       [phone]
     );
     
@@ -39,6 +39,8 @@ const sendOtp = async (req, res) => {
         error: 'User not found' 
       });
     }
+
+    const userCountryCode = results[0].country_code || '+1';
 
     // Generate 4-digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -56,16 +58,17 @@ const sendOtp = async (req, res) => {
       [phone, otp, expiresAt]
     );
 
-    // TWILIO SMS - Send OTP via SMS
-    let formattedPhone = phone;
+    // TWILIO SMS - Send OTP via SMS - Format phone to E.164 with leading + for Twilio
+    let formattedPhone = cell_phone || `${userCountryCode}${phone}`;
+    // Ensure leading + for E.164 compliance
     if (!formattedPhone.startsWith('+')) {
-      formattedPhone = cell_phone || `+1${phone}`;
+      formattedPhone = `+${formattedPhone}`;
     }
     
     try {
       await client.messages.create({
         body: `Your verification code is ${otp} for your Skate & Play waiver. Enjoy your roller skating session.`,
-        from: process.env.TWILIO_PHONE_NUMBER,
+        messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
         to: formattedPhone
       });
       console.log(`✅ OTP SMS sent to ${formattedPhone}`);

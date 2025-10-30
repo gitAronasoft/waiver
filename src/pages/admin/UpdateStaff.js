@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useSelector } from "react-redux";
 import axios from "../../utils/axios";
 import { toast } from "react-toastify";
 import { useParams, useNavigate } from "react-router-dom";
@@ -11,18 +12,15 @@ function UpdateStaff() {
   const [form, setForm] = useState({ name: "", email: "", role: "" });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const staff = useSelector((state) => state.auth.staff);
 
   // Check if user is superadmin
   React.useEffect(() => {
-    const staffData = localStorage.getItem('staff');
-    if (staffData) {
-      const user = JSON.parse(staffData);
-      if (user.role !== 'superadmin') {
-        toast.error('Access denied. Only superadmin can edit staff.');
-        navigate('/admin/staff-list');
-      }
+    if (staff && staff.role !== 'superadmin') {
+      toast.error('Access denied. Only superadmin can edit staff.');
+      navigate('/admin/staff-list');
     }
-  }, [navigate]);
+  }, [navigate, staff]);
 
   // Fetch Staff Details
   const fetchStaff = useCallback(async () => {

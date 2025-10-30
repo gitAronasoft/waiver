@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import axios from "../../utils/axios";
 import { toast } from "react-toastify";
 import Header from "./components/header";
@@ -9,18 +10,15 @@ function AddStaff() {
     const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", role: "" });
   const [loading, setLoading] = useState(false);
+  const staff = useSelector((state) => state.auth.staff);
 
   // Check if user is superadmin
   React.useEffect(() => {
-    const staffData = localStorage.getItem('staff');
-    if (staffData) {
-      const user = JSON.parse(staffData);
-      if (user.role !== 'superadmin') {
-        toast.error('Access denied. Only superadmin can add staff.');
-        navigate('/admin/staff-list');
-      }
+    if (staff && staff.role !== 'superadmin') {
+      toast.error('Access denied. Only superadmin can add staff.');
+      navigate('/admin/staff-list');
     }
-  }, [navigate]);
+  }, [navigate, staff]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });

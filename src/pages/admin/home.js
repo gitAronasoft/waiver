@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import axios from '../../utils/axios';
 import Header from './components/header';
 import { toast } from 'react-toastify';
@@ -10,7 +11,7 @@ function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
-  const staff = JSON.parse(localStorage.getItem("staff")) || {};
+  const staff = useSelector((state) => state.auth.staff) || {};
 
   const fetchData = useCallback(async () => {
     setLoading(true);

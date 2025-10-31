@@ -10,20 +10,11 @@ function AllDone() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [countdown, setCountdown] = useState(5);
-  const phone = useSelector((state) => state.waiverSession.phone);
-  const flowType = useSelector((state) => state.waiverSession.flowType);
   const currentStep = useSelector((state) => state.waiverSession.progress.currentStep);
-  // Only existing customers should go to My Waivers, new customers go to main screen
-  const skipToMyWaivers = flowType === 'existing' && Boolean(phone);
 
   const handleReturn = () => {
     dispatch(clearWaiverSession());
-    
-    if (skipToMyWaivers && phone) {
-      navigate("/my-waivers", { replace: true });
-    } else {
-      navigate("/", { replace: true });
-    }
+    navigate("/", { replace: true });
   };
 
   useEffect(() => {
@@ -41,20 +32,14 @@ function AllDone() {
           clearInterval(interval);
           
           dispatch(clearWaiverSession());
-          
-          // Only existing customers go to My Waivers, new customers go to main screen
-          if (flowType === 'existing' && phone) {
-            navigate("/my-waivers", { replace: true });
-          } else {
-            navigate("/", { replace: true });
-          }
+          navigate("/", { replace: true });
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [navigate, currentStep, skipToMyWaivers, phone, flowType, dispatch]);
+  }, [navigate, currentStep, dispatch]);
 
   // Prevent browser back button navigation
   useEffect(() => {
@@ -96,7 +81,7 @@ function AllDone() {
             </h3>
 
             <p style={{ fontSize: "1.2rem", marginTop: "10px" }}>
-              Redirecting to {skipToMyWaivers ? "My Waivers" : "the main screen"} in <strong>{countdown}</strong> seconds...
+              Redirecting to the main screen in <strong>{countdown}</strong> seconds...
             </p>
 
             <div className="mx-auto text-center">
@@ -104,7 +89,7 @@ function AllDone() {
                 className="return-btn btn btn-primary mt-3 text-center"
                 onClick={handleReturn}
               >
-                {skipToMyWaivers ? "Return to My Waivers now" : "Return to the MAIN screen now"}
+                Return to the MAIN screen now
               </button>
             </div>
           </div>

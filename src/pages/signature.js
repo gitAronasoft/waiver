@@ -6,7 +6,7 @@ import axios from "axios";
 import { toast } from 'react-toastify';
 import { BACKEND_URL } from '../config';
 import UserHeader from '../components/UserHeader';
-import { setCurrentStep, setSignatureImage as setSignatureImageRedux, setViewMode, setWaiverId } from "../store/slices/waiverSessionSlice";
+import { setCurrentStep, setViewMode, setWaiverId } from "../store/slices/waiverSessionSlice";
 
 
 
@@ -50,75 +50,66 @@ function Signature() {
     fullName: "",
     consented: customerType === "existing" || isReturning,
     subscribed: false,
-    minors: [],
   });
 
 
-  // Load customer data from Redux (data comes from ConfirmCustomerInfo page)
+  // Load customer data from Redux only (no API calls)
   useEffect(() => {
-    if (!phone || !reduxCustomerData) return;
+    // Check if Redux data exists, if not redirect to confirm-info
+    if (!reduxCustomerData || !reduxCustomerData.id) {
+      console.warn("No customer data in Redux, redirecting to confirm-info");
+      toast.error("Please confirm your information first");
+      navigate("/confirm-info", { replace: true });
+      return;
+    }
 
-    const loadCustomerData = async () => {
-      setLoading(true);
-      try {
-        // Use Redux data instead of fetching from API
-        const data = reduxCustomerData;
-        setCustomerData(data);
-        setForm((prev) => ({
-          ...prev,
-          date: new Date().toISOString().split("T")[0],
-          fullName: `${data.first_name} ${data.last_name}`,
-          minors: (reduxMinors || []).map((m) => ({
-            id: m.id,
-            first_name: m.first_name,
-            last_name: m.last_name,
-            dob: m.dob ? new Date(m.dob).toISOString().split("T")[0] : "",
-            checked: m.checked !== undefined ? m.checked : (m.status === 1),
-            isNew: m.isNew || false,
-          })),
-        }));
+    // Use Redux data directly
+    const data = reduxCustomerData;
+    setCustomerData(data);
+    setForm((prev) => ({
+      ...prev,
+      date: new Date().toISOString().split("T")[0],
+      fullName: `${data.first_name} ${data.last_name}`,
+    }));
 
-        // Only pre-fill signature when viewing a specific waiver OR when NOT creating a new waiver
-        // For new waiver flow (createNewWaiver=true), don't pre-fill signature
-        const shouldPreFillSignature = waiverId || (viewMode && !createNewWaiver);
-        
-        if (shouldPreFillSignature && (waiverId || customerId)) {
-          try {
-            const signatureResponse = waiverId
-              ? await axios.get(`${BACKEND_URL}/api/waivers/get-signature?waiverId=${waiverId}`)
-              : await axios.get(`${BACKEND_URL}/api/waivers/get-signature?customerId=${customerId}`);
+    // Only pre-fill signature when viewing a specific waiver OR when NOT creating a new waiver
+    // For new waiver flow (createNewWaiver=true), don't pre-fill signature
+    const shouldPreFillSignature = waiverId || (viewMode && !createNewWaiver);
+    
+    if (shouldPreFillSignature && (waiverId || customerId)) {
+      const loadSignature = async () => {
+        try {
+          const signatureResponse = waiverId
+            ? await axios.get(`${BACKEND_URL}/api/waivers/get-signature?waiverId=${waiverId}`)
+            : await axios.get(`${BACKEND_URL}/api/waivers/get-signature?customerId=${customerId}`);
+          
+          if (signatureResponse.data?.signature) {
+            const signatureData = signatureResponse.data.signature;
+            setOriginalSignature(signatureData); // Store original for comparison
             
-            if (signatureResponse.data?.signature) {
-              const signatureData = signatureResponse.data.signature;
-              setOriginalSignature(signatureData); // Store original for comparison
-              
-              // Pre-fill the signature pad
-              setTimeout(() => {
-                if (sigPadRef.current) {
-                  try {
-                    sigPadRef.current.fromDataURL(signatureData);
-                    setUserModifiedSignature(false); // Reset flag when loading existing signature
-                  } catch (error) {
-                    console.error("Failed to pre-fill signature:", error);
-                  }
+            // Pre-fill the signature pad
+            setTimeout(() => {
+              if (sigPadRef.current) {
+                try {
+                  sigPadRef.current.fromDataURL(signatureData);
+                  setUserModifiedSignature(false); // Reset flag when loading existing signature
+                } catch (error) {
+                  console.error("Failed to pre-fill signature:", error);
                 }
-              }, 100);
-            }
-          } catch (error) {
-            console.log("No previous signature found or error fetching:", error);
-            // Not a critical error, user can still sign manually
+              }
+            }, 100);
           }
+        } catch (error) {
+          console.log("No previous signature found or error fetching:", error);
+          // Not a critical error, user can still sign manually
         }
-      } catch (error) {
-        console.error("Failed to load customer data:", error);
-        toast.error("We couldn't load your information. Please go back and try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCustomerData();
-  }, [phone, reduxCustomerData, reduxMinors, isReturning, customerId, waiverId, viewMode, createNewWaiver]);
+      };
+      
+      loadSignature();
+    }
+    
+    setLoading(false);
+  }, [reduxCustomerData, reduxMinors, navigate, waiverId, customerId, viewMode, createNewWaiver]);
 
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
@@ -130,10 +121,9 @@ function Signature() {
   };
 
   const handleMinorChange = (index, field, value) => {
-    const minors = [...form.minors];
+    const minors = [...reduxMinors];
     minors[index][field] = value;
-    const updated = { ...form, minors };
-    setForm(updated);
+    dispatch(setMinors(minors));
     
     // Clear error for this field when user types
     const errorKey = `${index}_${field}`;
@@ -145,21 +135,20 @@ function Signature() {
   };
 
   const handleAddMinor = () => {
-    const updated = {
-      ...form,
-      minors: [
-        ...form.minors,
-        { first_name: "", last_name: "", dob: "", checked: false, isNew: true },
-      ],
+    const newMinor = { 
+      first_name: "", 
+      last_name: "", 
+      dob: "", 
+      checked: true, 
+      isNew: true 
     };
-    setForm(updated);
+    dispatch(setMinors([...reduxMinors, newMinor]));
   };
 
   const handleRemoveMinor = (index) => {
-    const minors = [...form.minors];
+    const minors = [...reduxMinors];
     minors.splice(index, 1);
-    const updated = { ...form, minors };
-    setForm(updated);
+    dispatch(setMinors(minors));
     
     // Clear errors for removed minor and rebuild error keys for remaining minors
     const newErrors = {};
@@ -233,11 +222,12 @@ function Signature() {
       return;
     }
 
-    // Validate all minors and collect errors
+    // Only validate and include checked minors
+    const checkedMinors = (reduxMinors || []).filter(m => m.checked);
     const validationErrors = {};
     let hasErrors = false;
     
-    form.minors.forEach((minor, index) => {
+    checkedMinors.forEach((minor, index) => {
       // Check if minor has any data entered
       const hasData = minor.first_name?.trim() || minor.last_name?.trim() || minor.dob;
       
@@ -284,14 +274,13 @@ function Signature() {
       return;
     }
 
-    // Only include minors with all required fields filled
-    const cleanedMinors = form.minors.filter(m => 
+    // Only include checked minors with all required fields filled
+    const cleanedMinors = checkedMinors.filter(m => 
       m.first_name?.trim() && m.last_name?.trim() && m.dob
     );
 
-    // Update form with cleaned minors
-    const updatedForm = { ...form, minors: cleanedMinors };
-    setForm(updatedForm);
+    // Update Redux with cleaned minors
+    dispatch(setMinors(cleanedMinors));
 
     try {
       // Add white background before exporting
@@ -312,16 +301,14 @@ function Signature() {
       // Restore original composition operation
       ctx.globalCompositeOperation = currentCompositeOperation;
 
-      dispatch(setSignatureImageRedux(signatureData));
-
       const payload = {
         id: customerData?.id || customerId,
         phone,
-        date: updatedForm.date,
-        fullName: updatedForm.fullName,
+        date: form.date,
+        fullName: form.fullName,
         minors: cleanedMinors,
-        subscribed: updatedForm.subscribed,
-        consented: updatedForm.consented,
+        subscribed: form.subscribed,
+        consented: form.consented,
         signature: signatureData,
       };
 
@@ -546,8 +533,8 @@ CONTENTS AND VOLUNTARILY AGREE TO ITS TERMS  </p>
 SIGNING THIS WAIVER I AM WAIVING CERTIAN LEGAL RIGHTS WHICH I OR MY HEIRS, NEXT OF KIN, EXECUTORS, 
 AND ADMINISTRATORS MAY HAVE AGAINST SKATE & PLAY INC. </p>
 
-            {/* Minor fields at top */}
-            {form.minors.filter(minor => isReturning ? minor.checked : true).map((minor, index) => (
+            {/* Minor fields at top - only show checked minors */}
+            {(reduxMinors || []).filter(minor => minor.checked).map((minor, index) => (
               <div key={index} className="my-3 no-print">
                 <div className="row g-2 align-items-start">
                   <div className="col-12 col-md-3">
@@ -635,29 +622,27 @@ AND ADMINISTRATORS MAY HAVE AGAINST SKATE & PLAY INC. </p>
               </div>
             ))}
             
-            {!isReturning && (
-              <div className="my-3 no-print">
-                <div className="row g-2 align-items-start">
-                  <div className="col-12 col-md-9"></div>
-                  <div className="col-12 col-md-3">
-                    <button 
-                      className="btn btn-primary w-100" 
-                      onClick={handleAddMinor}
-                      style={{
-                        backgroundColor: '#007bff',
-                        border: 'none',
-                        borderRadius: '8px',
-                        padding: '10px 15px',
-                        fontSize: '14px',
-                        fontWeight: '500'
-                      }}
-                    >
-                      Add another minor
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            
+
+            {/* Add Another Minor Button */}
+            <div className="text-center mt-4 mb-3 no-print">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAddMinor}
+                style={{
+                  backgroundColor: '#007bff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '12px 40px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  minWidth: '200px',
+                }}
+              >
+                Add another minor
+              </button>
+            </div>
 
             <div className="confirm-box mt-4 mb-4 no-print">
               <label className="d-flex align-items-start gap-2">
@@ -727,9 +712,7 @@ AND ADMINISTRATORS MAY HAVE AGAINST SKATE & PLAY INC. </p>
                 >
                   {submitting 
                     ? "Processing..." 
-                    : (viewCompleted || viewMode) && !createNewWaiver
-                      ? "Return to My Waivers"
-                      : "Accept and continue"}
+                    : "Accept and continue"}
                 </button>
               </div>
             </div>

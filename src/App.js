@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Index from "./pages/firstsetp";
 import NewCustomerForm from "./pages/NewCustomerForm";
@@ -11,7 +11,6 @@ import Signature from "./pages/signature";
 import AllDone from "./pages/AllDone";
 import StarRating from "./pages/StarRatingPage";
 import Feedback from "./pages/FeedbackPage";
-import UserDashboard from "./pages/UserDashboard";
 import LoginAdmin from "./pages/admin/login";
 import Home from "./pages/admin/home";
 import History from "./pages/admin/History";
@@ -29,17 +28,15 @@ import AdminPrivateRoute from "./pages/components/AdminPrivateRoute";
 import LoadingOverlay from "./components/LoadingOverlay";
 
 function AppContent() {
-  const location = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [location.pathname]);
+  }, []);
 
   return (
     <>
@@ -146,7 +143,6 @@ function AppContent() {
         <Route path="/rate/:id" element={<StarRating />} />
         {/* <Route path="/feedback/:id" element={<Feedback />} /> */}
         <Route path="/feedback" element={<Feedback />} />
-        <Route path="/my-waivers" element={<UserDashboard />} />
 
       </Routes>
     </>

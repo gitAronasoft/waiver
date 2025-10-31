@@ -12,12 +12,10 @@ import {
 import storage from 'redux-persist/lib/storage';
 import waiverSessionReducer from './slices/waiverSessionSlice';
 import authReducer from './slices/authSlice';
-import uiReducer from './slices/uiSlice';
 
 const rootReducer = combineReducers({
   waiverSession: waiverSessionReducer,
   auth: authReducer,
-  ui: uiReducer,
 });
 
 const persistConfig = {

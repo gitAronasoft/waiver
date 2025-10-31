@@ -13,7 +13,6 @@ function ConfirmCustomerInfo() {
   const phone = useSelector((state) => state.waiverSession.phone);
   const customerId = useSelector((state) => state.waiverSession.customerId);
   const waiverId = useSelector((state) => state.waiverSession.waiverId);
-  const viewMode = useSelector((state) => state.waiverSession.progress.viewMode);
 
   const [formData, setFormData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
@@ -32,82 +31,63 @@ function ConfirmCustomerInfo() {
   const [updating, setUpdating] = useState(false);
   const [minorErrors, setMinorErrors] = useState({});
 
+  // Get Redux data at component top level
+  const reduxCustomerData = useSelector((state) => state.waiverSession.customerData);
+  const reduxMinors = useSelector((state) => state.waiverSession.minors);
+
   useEffect(() => {
-    if (phone || waiverId || customerId) {
-      setLoading(true);
+    // Use data from Redux that was already fetched after login
+    if (reduxCustomerData && reduxCustomerData.id) {
+      console.log('📊 Using cached data from Redux');
+      
+      // Format phone numbers for display
+      const formatPhone = (num) => {
+        if (!num) return "";
+        const digits = num.replace(/\D/g, "").slice(0, 10);
+        if (digits.length === 10) {
+          return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+        }
+        return digits;
+      };
 
-      // Determine which endpoint to use:
-      // - If waiverId exists: use snapshot (could be viewing OR using as template for new waiver)
-      // - If customerId exists: use customer-info-by-id (creating new waiver for returning customer)
-      // - Otherwise: use phone-based lookup
-      const endpoint = waiverId
-        ? `${BACKEND_URL}/api/waivers/waiver-snapshot?waiverId=${waiverId}`
-        : customerId
-        ? `${BACKEND_URL}/api/waivers/customer-info-by-id?customerId=${customerId}`
-        : `${BACKEND_URL}/api/waivers/customer-info?phone=${phone}`;
+      const formattedData = {
+        ...reduxCustomerData,
+        home_phone: formatPhone(reduxCustomerData.home_phone),
+        cell_phone: formatPhone(reduxCustomerData.cell_phone),
+        work_phone: formatPhone(reduxCustomerData.work_phone),
+        dob: reduxCustomerData.dob ? new Date(reduxCustomerData.dob).toISOString().split("T")[0] : "",
+        can_email: reduxCustomerData.can_email === 1 || reduxCustomerData.can_email === "1",
+      };
 
-      console.log(`📊 Fetching data from: ${endpoint}`, { waiverId, viewMode, customerId, phone });
+      setFormData(formattedData);
+      
+      if (waiverId) {
+        setOriginalData(JSON.parse(JSON.stringify(formattedData)));
+      }
 
-      axios
-        .get(endpoint)
-        .then((res) => {
-          const data = res.data.customer;
-
-          // ✅ Convert numbers into masked format if exists
-          const formatPhone = (num) => {
-            if (!num) return "";
-            const digits = num.replace(/\D/g, "").slice(0, 10);
-            if (digits.length === 10) {
-              return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-            }
-            return digits;
-          };
-
-          data.home_phone = formatPhone(data.home_phone);
-          data.cell_phone = formatPhone(data.cell_phone);
-          data.work_phone = formatPhone(data.work_phone);
-
-          // ✅ Format DOB for date input (YYYY-MM-DD)
-          if (data.dob) {
-            data.dob = new Date(data.dob).toISOString().split("T")[0];
-          }
-
-          data.can_email = data.can_email === 1 || data.can_email === "1";
-          setFormData(data);
-          
-          // Store original data for comparison when loading a waiver (for "edit to create new" flow)
-          if (waiverId) {
-            setOriginalData(JSON.parse(JSON.stringify(data)));
-          }
-
-          if (res.data.minors) {
-            const minorsWithFlags = res.data.minors.map((minor) => ({
-              ...minor,
-              dob: minor.dob
-                ? new Date(minor.dob).toISOString().split("T")[0]
-                : "",
-              checked: waiverId ? true : (minor.status === 1), // Check all minors when loading from waiver
-              isNew: false,
-            }));
-            setMinorList(minorsWithFlags);
-            
-            // Store original minors for comparison when loading a waiver
-            if (waiverId) {
-              setOriginalMinors(JSON.parse(JSON.stringify(minorsWithFlags)));
-            }
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-          toast.error(
-            err?.response?.data?.message || "We couldn't load your information. Please try again.",
-          );
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+      // Set minors from Redux
+      if (reduxMinors && reduxMinors.length > 0) {
+        const minorsWithFlags = reduxMinors.map((minor) => ({
+          ...minor,
+          dob: minor.dob ? new Date(minor.dob).toISOString().split("T")[0] : "",
+          checked: waiverId ? true : (minor.status === 1 || minor.checked),
+          isNew: minor.isNew || false,
+        }));
+        setMinorList(minorsWithFlags);
+        
+        if (waiverId) {
+          setOriginalMinors(JSON.parse(JSON.stringify(minorsWithFlags)));
+        }
+      }
+      
+      setLoading(false);
+    } else {
+      // If Redux data is missing, redirect to login to fetch it again
+      console.warn("No customer data in Redux, redirecting to login");
+      toast.error("Session expired. Please log in again.");
+      navigate("/existing-customer", { replace: true });
     }
-  }, [phone, customerId, waiverId, viewMode]);
+  }, [reduxCustomerData, reduxMinors, waiverId, navigate, dispatch]);
 
   // const handleChange = (e) => {
   //   const { name, value, type } = e.target;
@@ -233,8 +213,10 @@ function ConfirmCustomerInfo() {
       
       if (!original) return true; // Minor was removed or added
       
-      // Check if checked status changed
-      if (current.checked !== original.checked) return true;
+      // Check if checked status changed (convert to boolean for comparison)
+      const currentChecked = Boolean(current.checked);
+      const originalChecked = Boolean(original.checked);
+      if (currentChecked !== originalChecked) return true;
       
       // Check if minor data changed (shouldn't happen as fields are readonly, but checking anyway)
       if (current.first_name !== original.first_name ||
@@ -388,7 +370,7 @@ function ConfirmCustomerInfo() {
 
   return (
     <>
-      <UserHeader showBack={true} backTo="/my-waivers" backState={{ phone }} />
+      <UserHeader />
       <div className="container-fluid">
         <div className="container text-center">
         <div className="row">
@@ -597,6 +579,8 @@ function ConfirmCustomerInfo() {
                           const updated = [...minorList];
                           updated[index].checked = e.target.checked;
                           setMinorList(updated);
+                          // Update Redux immediately so signature page reflects changes
+                          dispatch(setMinors(updated));
                         }}
                         class="custom-checkbox"
                       />
@@ -763,7 +747,7 @@ function ConfirmCustomerInfo() {
                       minWidth: "200px",
                     }}
                   >
-                    {updating ? "Processing..." : hasModifications() ? "Confirm" : "Continue"}
+                    {updating ? "Processing..." : "Confirm"}
                   </button>
                 </div>
               </div>           

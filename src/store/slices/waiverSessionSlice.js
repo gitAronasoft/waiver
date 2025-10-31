@@ -20,14 +20,6 @@ const initialState = {
     work_phone: '',
   },
   minors: [],
-  signature: {
-    signatureImage: null,
-    initials: '',
-    date: '',
-    fullName: '',
-    consented: false,
-    subscribed: false,
-  },
   progress: {
     currentStep: 'INITIAL',
     isReturning: false,
@@ -59,27 +51,6 @@ const waiverSessionSlice = createSlice({
     setMinors: (state, action) => {
       state.minors = action.payload;
     },
-    addMinor: (state, action) => {
-      state.minors.push(action.payload);
-    },
-    updateMinor: (state, action) => {
-      const { index, data } = action.payload;
-      if (state.minors[index]) {
-        state.minors[index] = { ...state.minors[index], ...data };
-      }
-    },
-    removeMinor: (state, action) => {
-      state.minors.splice(action.payload, 1);
-    },
-    setSignature: (state, action) => {
-      state.signature = { ...state.signature, ...action.payload };
-    },
-    setSignatureImage: (state, action) => {
-      state.signature.signatureImage = action.payload;
-    },
-    setInitials: (state, action) => {
-      state.signature.initials = action.payload;
-    },
     setProgress: (state, action) => {
       state.progress = { ...state.progress, ...action.payload };
     },
@@ -90,12 +61,6 @@ const waiverSessionSlice = createSlice({
       state.progress.viewMode = action.payload;
     },
     clearWaiverSession: () => initialState,
-    initializeFromExistingCustomer: (state, action) => {
-      const { customer, minors } = action.payload;
-      state.customerData = customer;
-      state.minors = minors || [];
-      state.progress.isReturning = true;
-    },
   },
 });
 
@@ -106,17 +71,10 @@ export const {
   setFlowType,
   setCustomerData,
   setMinors,
-  addMinor,
-  updateMinor,
-  removeMinor,
-  setSignature,
-  setSignatureImage,
-  setInitials,
   setProgress,
   setCurrentStep,
   setViewMode,
   clearWaiverSession,
-  initializeFromExistingCustomer,
 } = waiverSessionSlice.actions;
 
 export default waiverSessionSlice.reducer;

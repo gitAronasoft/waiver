@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import { useMask } from "@react-input/mask";
 import { countryCodes } from "../countryCodes";
 import { BACKEND_URL } from '../config';
-import { setPhone as setReduxPhone, setCurrentStep, setViewMode, setFlowType } from "../store/slices/waiverSessionSlice";
+import { setPhone as setReduxPhone, setCurrentStep, setViewMode, setFlowType, setWaiverId, setCustomerData, setMinors } from "../store/slices/waiverSessionSlice";
 
 function ExistingCustomerLogin() {
   const [phone, setPhone] = useState("");
@@ -100,25 +100,59 @@ function ExistingCustomerLogin() {
 
   const sendOtp = async () => {
     if (loading) return;
-    
+
     const cleanPhone = phone.replace(/\D/g, "");
-    
+
     if (cleanPhone.length === 0) {
       toast.error("Please enter your phone number to continue.");
       return;
     }
-    
+
     if (cleanPhone.length < 10) {
       toast.error(`Phone number must be exactly 10 digits. You entered ${cleanPhone.length} digit${cleanPhone.length !== 1 ? 's' : ''}.`);
       return;
     }
-    
+
     setLoading(true);
     try {
       const fullPhone = `${countryCode}${cleanPhone}`;   
       const res = await axios.post(`${BACKEND_URL}/api/auth/send-otp`, { cell_phone: fullPhone, phone: cleanPhone });
       toast.success(res.data.message);
-      
+
+      // After OTP is sent successfully, fetch latest waiver and full customer data
+      console.log("✅ OTP sent successfully");
+
+      try {
+        // Fetch customer info to pre-populate Redux
+        const customerInfoRes = await axios.get(
+          `${BACKEND_URL}/api/waivers/customer-info?phone=${cleanPhone}`
+        );
+
+        if (customerInfoRes.data.customer) {
+          const data = customerInfoRes.data.customer;
+          dispatch(setCustomerData(data));
+          console.log('✅ Stored customer data in Redux');
+
+          if (customerInfoRes.data.minors) {
+            dispatch(setMinors(customerInfoRes.data.minors));
+            console.log('✅ Stored minors data in Redux');
+          }
+        }
+
+        // Also fetch latest waiver ID if exists
+        const latestWaiverRes = await axios.get(
+          `${BACKEND_URL}/api/waivers/latest-waiver?phone=${cleanPhone}`
+        );
+
+        if (latestWaiverRes.data.waiverId) {
+          dispatch(setWaiverId(latestWaiverRes.data.waiverId));
+          console.log(`✅ Stored latest waiverId in Redux: ${latestWaiverRes.data.waiverId}`);
+        }
+      } catch (err) {
+        console.warn("Could not fetch customer data:", err);
+        // Non-critical, continue with flow
+      }
+
       dispatch(setReduxPhone(cleanPhone));
       dispatch(setFlowType('existing'));
       dispatch(setViewMode(false));

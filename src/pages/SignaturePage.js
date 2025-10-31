@@ -31,7 +31,6 @@ function Signature() {
   const waiverId = useSelector((state) => state.waiverSession.waiverId);
   const viewMode = useSelector((state) => state.waiverSession.progress.viewMode) || false;
   const createNewWaiver = useSelector((state) => state.waiverSession.progress.createNewWaiver) || false;
-  const viewCompleted = useSelector((state) => state.waiverSession.progress.viewCompleted) || false;
   const hasDataModifications = useSelector((state) => state.waiverSession.progress.hasDataModifications) || false;
   
   // Get customer data and minors from Redux (saved by ConfirmCustomerInfo page)
@@ -113,7 +112,7 @@ function Signature() {
     }
     
     setLoading(false);
-  }, [reduxCustomerData, reduxMinors, navigate, waiverId, customerId, viewMode, createNewWaiver]);
+  }, [reduxCustomerData, reduxMinors, navigate, waiverId, customerId, viewMode, createNewWaiver, customerType]);
 
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;
@@ -286,6 +285,36 @@ function Signature() {
     // Update Redux with cleaned minors
     dispatch(setMinors(cleanedMinors));
 
+    // Update customer data in database if modifications detected (add/remove minors)
+    if (hasDataModifications) {
+      console.log("🔄 Database update - modifications detected, updating customer data");
+      try {
+        const stripMask = (val) => (val ? val.replace(/\D/g, "") : "");
+        const updatePayload = {
+          ...customerData,
+          cell_phone: stripMask(customerData.cell_phone),
+          home_phone: stripMask(customerData.home_phone),
+          work_phone: stripMask(customerData.work_phone),
+          minors: cleanedMinors.map((minor) => ({
+            id: minor.id,
+            first_name: minor.first_name,
+            last_name: minor.last_name,
+            dob: minor.dob,
+            isNew: minor.isNew,
+            checked: minor.checked,
+          })),
+        };
+
+        await axios.post(`${BACKEND_URL}/api/waivers/update-customer`, updatePayload);
+        console.log("✅ Customer data updated in database");
+      } catch (error) {
+        console.error("Failed to update customer data:", error);
+        toast.error("Failed to update your information. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+    }
+
     // Check if modifications exist and create new waiver if needed (ONLY for existing customers)
     // New customers already have a waiver created in NewCustomerForm, so skip this
     if ((hasDataModifications || userModifiedSignature) && waiverId && customerType === 'existing') {
@@ -387,12 +416,6 @@ function Signature() {
     // Show confirmation dialog if user is modifying a completed waiver's signature
     if (isViewingCompletedWaiver && signatureHasChanged && !createNewWaiver) {
       setShowSignatureConfirmDialog(true);
-      return;
-    }
-
-    // If in view mode without changes (and not creating new waiver), redirect to home
-    if ((viewMode || viewCompleted) && !createNewWaiver && !signatureHasChanged) {
-      navigate("/", { replace: true });
       return;
     }
 

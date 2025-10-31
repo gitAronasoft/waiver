@@ -26,6 +26,7 @@ import AdminFeedbackPage from "./pages/admin/AdminFeedbackPage";
 
 import AdminPrivateRoute from "./pages/components/AdminPrivateRoute";
 import LoadingOverlay from "./components/LoadingOverlay";
+import NotFound from "./pages/NotFound";
 
 function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
@@ -142,6 +143,9 @@ function AppContent() {
         <Route path="/rate/:id" element={<StarRating />} />
         {/* <Route path="/feedback/:id" element={<Feedback />} /> */}
         <Route path="/feedback" element={<Feedback />} />
+        
+        {/* Catch-all route for 404 - must be last */}
+        <Route path="*" element={<NotFound />} />
 
       </Routes>
     </>

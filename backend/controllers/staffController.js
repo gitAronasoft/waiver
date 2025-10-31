@@ -183,7 +183,7 @@ const forgetPassword = async (req, res) => {
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
                 <tr>
                   <td style="background-color: #002244; color: white; padding: 30px 20px; text-align: center;">
-                    <img src="${resetBase}/assets/img/SKATE_AND_PLAY_V08_Full_Transparency (2) 1.png" alt="Skate & Play Logo" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
+                    <img src="${resetBase}/assets/img/logo.png" alt="Skate & Play Logo" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
                     <h2 style="margin: 10px 0 0 0;">Admin Portal</h2>
                   </td>
                 </tr>
@@ -578,7 +578,7 @@ const addStaff = async (req, res) => {
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
                 <tr>
                   <td style="background-color: #002244; color: white; padding: 30px 20px; text-align: center;">
-                    <img src="${resetBase}/assets/img/SKATE_AND_PLAY_V08_Full_Transparency (2) 1.png" alt="Skate & Play Logo" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
+                    <img src="${resetBase}/assets/img/logo.png" alt="Skate & Play Logo" style="max-width: 200px; height: auto; margin-bottom: 10px;" />
                     <h2 style="margin: 10px 0 0 0;">Admin Portal</h2>
                   </td>
                 </tr>

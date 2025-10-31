@@ -3,8 +3,8 @@ const crypto = require("crypto");
 require("dotenv").config();
 
 const MAILCHIMP_API_KEY = process.env.MAILCHIMP_API_KEY;
-const LIST_ID = process.env.MAILCHIMP_AUDIENCE_ID;
-const DATACENTER = process.env.MAILCHIMP_SERVER_PREFIX;
+const LIST_ID = process.env.MAILCHIMP_LIST_ID;
+const DATACENTER = process.env.MAILCHIMP_DC;
 
 /**
  * Generate MD5 hash of email for Mailchimp subscriber ID

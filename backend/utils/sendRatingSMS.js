@@ -14,7 +14,7 @@ async function sendRatingSMS(customer) {
   try {
     await client.messages.create({
       body: `Hi ${customer.first_name}! 👋 Thanks for visiting Skate & Play! We'd love to hear about your experience. Tap to rate your visit: ${ratingLink} 🌟`,
-      from: process.env.TWILIO_PHONE_NUMBER,
+      messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
       to: formattedPhone
     });
     console.log(`✅ Rating SMS sent to ${formattedPhone}`);

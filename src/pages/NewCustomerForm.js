@@ -252,11 +252,11 @@ function NewCustomerForm() {
       if (isChecked) {
         dispatch(setCurrentStep('OTP_VERIFICATION'));
         toast.success("Your information has been saved. Please check your phone for the verification code.");
-        navigate("/otp-verified");
+        navigate("/verify-otp");
       } else {
         dispatch(setCurrentStep('SIGNATURE'));
         toast.success("Your information has been saved successfully.");
-        navigate("/signature");
+        navigate("/sign");
       }
     } catch (err) {
       if (err.response && err.response.data?.error) {

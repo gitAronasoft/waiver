@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-import Index from "./pages/firstsetp";
+import WelcomePage from "./pages/WelcomePage";
 import NewCustomerForm from "./pages/NewCustomerForm";
 import ExistingCustomerLogin from "./pages/ExistingCustomerLogin";
-import OtpVerified from "./pages/otpverified";
+import VerifyOtpPage from "./pages/VerifyOtpPage";
 import ConfirmCustomerInfo from "./pages/ConfirmCustomerInfo";
 import RuleReminder from "./pages/RuleReminder";
-import Signature from "./pages/signature";
+import SignaturePage from "./pages/SignaturePage";
 import AllDone from "./pages/AllDone";
 import StarRating from "./pages/StarRatingPage";
 import Feedback from "./pages/FeedbackPage";
@@ -131,15 +131,14 @@ function AppContent() {
 
 
         {/* Public User Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/new-customer" element={<NewCustomerForm />} />
-        <Route path="/existing-customer" element={<ExistingCustomerLogin />} />
-        <Route path="/otp-verified" element={<OtpVerified />} />
-        <Route path="/confirm-info" element={<ConfirmCustomerInfo />} />
-        <Route path="/signature" element={<Signature />} />
-        <Route path="/rules" element={<RuleReminder />} />
-
-        <Route path="/all-done" element={<AllDone />} />
+        <Route path="/" element={<WelcomePage />} />
+        <Route path="/register" element={<NewCustomerForm />} />
+        <Route path="/login" element={<ExistingCustomerLogin />} />
+        <Route path="/verify-otp" element={<VerifyOtpPage />} />
+        <Route path="/confirm" element={<ConfirmCustomerInfo />} />
+        <Route path="/sign" element={<SignaturePage />} />
+        <Route path="/terms" element={<RuleReminder />} />
+        <Route path="/complete" element={<AllDone />} />
         <Route path="/rate/:id" element={<StarRating />} />
         {/* <Route path="/feedback/:id" element={<Feedback />} /> */}
         <Route path="/feedback" element={<Feedback />} />

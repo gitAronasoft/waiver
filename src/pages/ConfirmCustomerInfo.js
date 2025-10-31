@@ -85,7 +85,7 @@ function ConfirmCustomerInfo() {
       // If Redux data is missing, redirect to login to fetch it again
       console.warn("No customer data in Redux, redirecting to login");
       toast.error("Session expired. Please log in again.");
-      navigate("/existing-customer", { replace: true });
+      navigate("/login", { replace: true });
     }
   }, [reduxCustomerData, reduxMinors, waiverId, navigate, dispatch]);
 
@@ -362,7 +362,7 @@ function ConfirmCustomerInfo() {
     dispatch(setCustomerData(updatedData));
     dispatch(setMinors(updatedData.minors));
     dispatch(setCurrentStep('SIGNATURE'));
-    navigate("/signature", { replace: true });
+    navigate("/sign", { replace: true });
   };
   if (loading || !formData) {
     return <div className="text-center mt-5">Loading customer info...</div>;

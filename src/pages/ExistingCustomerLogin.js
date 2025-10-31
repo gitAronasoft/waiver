@@ -157,7 +157,7 @@ function ExistingCustomerLogin() {
       dispatch(setFlowType('existing'));
       dispatch(setViewMode(false));
       dispatch(setCurrentStep('OTP_VERIFICATION'));
-      navigate("/otp-verified");
+      navigate("/verify-otp");
     } catch (err) {
       toast.error(err?.response?.data?.message || "We couldn't send the verification code. Please check your phone number and try again.");
     } finally {

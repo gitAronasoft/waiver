@@ -73,7 +73,7 @@ const verifyOtp = async (otpValue) => {
       }
 
       if (flowType === "existing") {
-        // Fetch latest waiver and redirect to confirm-info
+        // Fetch latest waiver and redirect to review information
         try {
           const latestWaiverRes = await axios.get(`${BACKEND_URL}/api/waivers/latest-waiver?phone=${phone}`);
           if (latestWaiverRes.data.waiverId) {
@@ -85,10 +85,10 @@ const verifyOtp = async (otpValue) => {
           console.error("Error fetching latest waiver:", error);
         }
         dispatch(setCurrentStep('CONFIRM_INFO'));
-        navigate("/confirm", { replace: true });
+        navigate("/review-information", { replace: true });
       } else if (flowType === "new") {
         dispatch(setCurrentStep('SIGNATURE'));
-        navigate("/sign", { replace: true });
+        navigate("/sign-waiver", { replace: true });
       }
     } else {
       toast.error("The code you entered is incorrect. Please try again.");

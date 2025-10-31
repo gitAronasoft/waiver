@@ -134,10 +134,10 @@ function AppContent() {
         <Route path="/" element={<WelcomePage />} />
         <Route path="/register" element={<NewCustomerForm />} />
         <Route path="/login" element={<ExistingCustomerLogin />} />
-        <Route path="/verify-otp" element={<VerifyOtpPage />} />
-        <Route path="/confirm" element={<ConfirmCustomerInfo />} />
-        <Route path="/sign" element={<SignaturePage />} />
-        <Route path="/terms" element={<RuleReminder />} />
+        <Route path="/verify-phone" element={<VerifyOtpPage />} />
+        <Route path="/review-information" element={<ConfirmCustomerInfo />} />
+        <Route path="/sign-waiver" element={<SignaturePage />} />
+        <Route path="/rules" element={<RuleReminder />} />
         <Route path="/complete" element={<AllDone />} />
         <Route path="/rate/:id" element={<StarRating />} />
         {/* <Route path="/feedback/:id" element={<Feedback />} /> */}

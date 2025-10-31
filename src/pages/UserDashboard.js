@@ -286,7 +286,7 @@ function UserDashboard() {
                       onClick={() => {
                         dispatch(setWaiverId(waiver.waiver_id));
                         dispatch(setViewMode(isPending ? false : true));
-                        navigate("/confirm-info", { 
+                        navigate("/review-information", { 
                           state: { 
                             phone, 
                             waiverId: waiver.waiver_id,

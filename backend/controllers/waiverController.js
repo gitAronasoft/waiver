@@ -13,7 +13,6 @@ const client = twilio(
  *
  * Index suggestions:
  * - CREATE INDEX idx_users_cell_phone ON users(cell_phone)
- * - CREATE INDEX idx_minors_user_id ON minors(user_id)
  */
 const createWaiver = async (req, res) => {
   const connection = await db.getConnection();
@@ -230,13 +229,15 @@ const createWaiver = async (req, res) => {
 
     await connection.commit();
 
+    console.log(`✅ Waiver creation successful - userId: ${userId}, waiverId: ${waiverId}`);
+
     res.status(201).json({
       success: true,
       message: send_otp
         ? "Waiver created and OTP sent successfully"
         : "Waiver created successfully",
-      userId,
-      waiverId,
+      userId: userId,
+      waiverId: waiverId,
     });
   } catch (error) {
     await connection.rollback();

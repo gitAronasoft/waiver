@@ -65,6 +65,51 @@ The system follows a "one user per phone number" database architecture with hist
 
 ## Recent Changes
 
+### Session 46 Continuation - October 31, 2025
+
+**Major Refactoring - Route Naming, Flow Optimization & Modification Detection** ✅
+
+**1. Backend Verification:**
+- Verified backend already using `minors_snapshot` JSON approach (no migration needed)
+- Confirmed no queries to minors table exist in codebase
+- Removed outdated comments from `waiverController.js`
+- **Impact**: Backend already fully optimized for minors_snapshot architecture
+
+**2. Frontend Route Refactoring:**
+- **Deleted 3 duplicate/unused files**: signature.js (807 lines), signaturePdf.js, otpverified.js (165 lines)
+- **Professional route renames** (4 groups, 15+ files updated):
+  - `/verify-otp` → `/verify-phone` (clearer phone verification purpose)
+  - `/confirm` → `/review-information` (describes information review action)
+  - `/sign` → `/sign-waiver` (explicitly states signing action)
+  - `/terms` → `/rules` (matches facility rules content)
+- **Impact**: Removed 1,000+ lines of duplicate code, professional descriptive URLs, cleaner routing structure
+
+**3. Flow Optimization Verification:**
+- **Existing Customer Flow**: ExistingCustomerLogin → OTP → fetches data once → stores in Redux → subsequent pages read from Redux only
+- **New Customer Flow**: NewCustomerForm → creates waiver → OTP → subsequent pages read from Redux only
+- **Impact**: Both flows Redux-first with minimal API calls, data fetched once and reused
+
+**4. Modification Detection Refactoring:**
+- **Problem**: ConfirmCustomerInfo was creating new waiver when user clicked Continue (inefficient, created waivers even if signature not completed)
+- **Solution**:
+  - Added `hasDataModifications` flag to `waiverSessionSlice` progress state
+  - Refactored `ConfirmCustomerInfo.js`: Removed waiver creation logic, now only updates customer data and stores modification flag in Redux (~50 lines shorter)
+  - Refactored `SignaturePage.js`: Added modification detection on signature submit, creates new waiver only when `(hasDataModifications || userModifiedSignature) && waiverId`
+- **Impact**: 
+  - Waiver creation only when signature actually submitted (efficient)
+  - No wasted resources creating unsigned waivers
+  - Better UX - users can back out without unnecessary database entries
+  - Clean separation - ConfirmCustomerInfo handles data updates, SignaturePage handles waiver creation
+
+**5. Unused Backend Endpoints Identified:**
+- `/api/waivers/getminors`, `/waiver-snapshot`, `/customer-info-by-id`, `/user-history/:phone`, `/rate/:id` (GET/POST)
+- **Note**: Can be removed in future cleanup if needed
+
+**Architect Review**: Pass - All refactoring coherent, no blocking defects, improved code quality
+
+**Files Modified**: 11 files (App.js, ConfirmCustomerInfo.js, SignaturePage.js, VerifyOtpPage.js, waiverSessionSlice.js, and 6 navigation files)
+**Files Deleted**: 3 duplicate files (signature.js, signaturePdf.js, otpverified.js)
+
 ### Session 43 - October 31, 2025
 
 **Customer Flow Streamlining:**

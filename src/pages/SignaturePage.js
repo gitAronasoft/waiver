@@ -32,6 +32,7 @@ function Signature() {
   const viewMode = useSelector((state) => state.waiverSession.progress.viewMode) || false;
   const createNewWaiver = useSelector((state) => state.waiverSession.progress.createNewWaiver) || false;
   const viewCompleted = useSelector((state) => state.waiverSession.progress.viewCompleted) || false;
+  const hasDataModifications = useSelector((state) => state.waiverSession.progress.hasDataModifications) || false;
   
   // Get customer data and minors from Redux (saved by ConfirmCustomerInfo page)
   const reduxCustomerData = useSelector((state) => state.waiverSession.customerData);
@@ -55,11 +56,11 @@ function Signature() {
 
   // Load customer data from Redux only (no API calls)
   useEffect(() => {
-    // Check if Redux data exists, if not redirect to confirm-info
+    // Check if Redux data exists, if not redirect to review information
     if (!reduxCustomerData || !reduxCustomerData.id) {
-      console.warn("No customer data in Redux, redirecting to confirm-info");
+      console.warn("No customer data in Redux, redirecting to review-information");
       toast.error("Please confirm your information first");
-      navigate("/confirm", { replace: true });
+      navigate("/review-information", { replace: true });
       return;
     }
 
@@ -282,6 +283,37 @@ function Signature() {
     // Update Redux with cleaned minors
     dispatch(setMinors(cleanedMinors));
 
+    // Check if modifications exist and create new waiver if needed
+    if ((hasDataModifications || userModifiedSignature) && waiverId) {
+      console.log("🔄 Modifications detected - creating new unsigned waiver before signature submission");
+      try {
+        const stripMask = (val) => (val ? val.replace(/\D/g, "") : "");
+        const createWaiverPayload = {
+          ...customerData,
+          cell_phone: stripMask(customerData.cell_phone),
+          home_phone: stripMask(customerData.home_phone),
+          work_phone: stripMask(customerData.work_phone),
+          minors: cleanedMinors.map(m => ({
+            first_name: m.first_name,
+            last_name: m.last_name,
+            dob: m.dob,
+          })),
+          send_otp: false,
+        };
+        
+        await axios.post(`${BACKEND_URL}/api/waivers`, createWaiverPayload);
+        
+        // Clear waiverId so save-signature creates/updates the new waiver
+        dispatch(setWaiverId(null));
+        console.log("✅ Created new waiver due to modifications");
+      } catch (error) {
+        console.error("Failed to create new waiver:", error);
+        toast.error("Failed to create new waiver. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+    }
+
     try {
       // Add white background before exporting
       const canvas = sigPadRef.current.getCanvas();
@@ -329,7 +361,7 @@ function Signature() {
       
       toast.success("Thank you! Your waiver has been submitted successfully.");
       dispatch(setCurrentStep('RULE_REMINDER'));
-      navigate("/terms", { replace: true });
+      navigate("/rules", { replace: true });
     } catch (error) {
       console.error("Error saving signature:", error);
       if (error.response) {
@@ -354,9 +386,9 @@ function Signature() {
       return;
     }
 
-    // If in view mode without changes (and not creating new waiver), redirect to My Waivers
+    // If in view mode without changes (and not creating new waiver), redirect to home
     if ((viewMode || viewCompleted) && !createNewWaiver && !signatureHasChanged) {
-      navigate("/my-waivers", { replace: true });
+      navigate("/", { replace: true });
       return;
     }
 
@@ -396,9 +428,9 @@ function formatPhone(phone = "") {
     
     // Always navigate back to the previous step in the flow
     if (customerType === "new") {
-      navigate("/verify-otp", { replace: true });
+      navigate("/verify-phone", { replace: true });
     } else {
-      navigate("/confirm", { replace: true });
+      navigate("/review-information", { replace: true });
     }
   };
 

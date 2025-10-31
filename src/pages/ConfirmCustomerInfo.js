@@ -5,7 +5,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { BACKEND_URL } from "../config";
 import UserHeader from "../components/UserHeader";
-import { setCurrentStep, setCustomerData, setMinors, setWaiverId, setViewMode } from "../store/slices/waiverSessionSlice";
+import { setCurrentStep, setCustomerData, setMinors, setProgress } from "../store/slices/waiverSessionSlice";
 
 function ConfirmCustomerInfo() {
   const navigate = useNavigate();
@@ -281,7 +281,7 @@ function ConfirmCustomerInfo() {
     const stripMask = (val) => (val ? val.replace(/\D/g, "") : "");
     const updatedData = {
       ...formData,
-      id: formData.id || customerId, // Ensure customer ID is always included
+      id: formData.id || customerId,
       cell_phone: stripMask(formData.cell_phone),
       minors: minorList.map((minor) => ({
         id: minor.id,
@@ -293,61 +293,17 @@ function ConfirmCustomerInfo() {
       })),
     };
 
-    // If modifications were made and we're editing from a waiver, create a NEW waiver
-    if (isModified && waiverId) {
-      setUpdating(true);
-      try {
-        // Update customer data first
-        await axios.post(
-          `${BACKEND_URL}/api/waivers/update-customer`,
-          updatedData,
-        );
-        
-        // Create a new unsigned waiver by calling createWaiver
-        const createWaiverPayload = {
-          ...formData,
-          cell_phone: stripMask(formData.cell_phone),
-          home_phone: stripMask(formData.home_phone),
-          work_phone: stripMask(formData.work_phone),
-          minors: minorList
-            .filter(m => m.checked) // Only include checked minors
-            .map(m => ({
-              first_name: m.first_name,
-              last_name: m.last_name,
-              dob: m.dob,
-            })),
-          send_otp: false, // Don't send OTP for returning users
-        };
-        
-        await axios.post(
-          `${BACKEND_URL}/api/waivers`,
-          createWaiverPayload,
-        );
-        
-        // Clear the old waiverId since we're creating a new one
-        // The backend will create a new unsigned waiver for this user
-        dispatch(setWaiverId(null));
-        
-        // Set viewMode to false since we're creating a new waiver that needs to be signed
-        dispatch(setViewMode(false));
-        
-        console.log("✅ Created new unsigned waiver for modified data");
-      } catch (err) {
-        console.error("Error creating new waiver:", err);
-        toast.error("We couldn't create your new waiver. Please try again.");
-        setUpdating(false);
-        return;
-      } finally {
-        setUpdating(false);
-      }
-    } else if (isModified && !waiverId) {
-      // Just updating existing customer without creating new waiver
+    // Update customer data if modified (don't create waiver here)
+    if (isModified) {
       setUpdating(true);
       try {
         await axios.post(
           `${BACKEND_URL}/api/waivers/update-customer`,
           updatedData,
         );
+        // Store flag in Redux so SignaturePage can check it
+        dispatch(setProgress({ hasDataModifications: true }));
+        console.log("✅ Customer data updated, modifications flagged for signature page");
       } catch (err) {
         console.error("Error updating customer:", err);
         toast.error("We couldn't update your information. Please try again.");
@@ -356,13 +312,16 @@ function ConfirmCustomerInfo() {
       } finally {
         setUpdating(false);
       }
+    } else {
+      // No modifications detected
+      dispatch(setProgress({ hasDataModifications: false }));
     }
 
     // Save customer data and minors to Redux so signature page can use them
     dispatch(setCustomerData(updatedData));
     dispatch(setMinors(updatedData.minors));
     dispatch(setCurrentStep('SIGNATURE'));
-    navigate("/sign", { replace: true });
+    navigate("/sign-waiver", { replace: true });
   };
   if (loading || !formData) {
     return <div className="text-center mt-5">Loading customer info...</div>;

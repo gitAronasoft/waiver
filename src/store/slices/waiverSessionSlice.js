@@ -26,6 +26,7 @@ const initialState = {
     viewMode: false,
     createNewWaiver: false,
     viewCompleted: false,
+    hasDataModifications: false,
   },
 };
 

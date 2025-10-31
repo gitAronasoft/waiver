@@ -75,7 +75,28 @@ const sendOtp = async (req, res) => {
     } catch (twilioError) {
       const errorId = `ERR_${Date.now()}`;
       console.error(`[${errorId}] Twilio SMS failed:`, twilioError.message);
-      // Don't fail the entire request if SMS fails - still allow OTP verification
+      
+      // Check if error is due to invalid phone number
+      const isInvalidPhone = twilioError.message && (
+        twilioError.message.includes('not a valid phone number') ||
+        twilioError.message.includes('is not a mobile number') ||
+        twilioError.message.includes('invalid phone number') ||
+        twilioError.code === 21211 || // Invalid 'To' Phone Number
+        twilioError.code === 21614    // 'To' number is not a valid mobile number
+      );
+      
+      if (isInvalidPhone) {
+        // Delete the OTP we just created since we can't send it
+        await db.query('DELETE FROM otps WHERE phone = ?', [phone]);
+        
+        return res.status(400).json({
+          error: 'Invalid phone number',
+          message: 'The phone number you provided is not valid. Please check the country code and phone number, then try again.',
+          errorId
+        });
+      }
+      
+      // For other Twilio errors (service outage, etc.), allow manual verification
       console.warn(`⚠️ OTP generated but SMS failed. User can still verify manually.`);
     }
 
@@ -156,8 +177,17 @@ const verifyOtp = async (req, res) => {
     );
     console.log(`✅ Updated user record to verified status`);
 
+    // Fetch user ID for Redux state
+    const [userResults] = await db.query(
+      'SELECT id FROM users WHERE cell_phone = ?',
+      [phone]
+    );
+    
+    const userId = userResults.length > 0 ? userResults[0].id : null;
+
     res.json({ 
-      authenticated: true, 
+      authenticated: true,
+      userId, 
       message: 'OTP verified successfully' 
     });
   } catch (error) {

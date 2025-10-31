@@ -1,5 +1,6 @@
 const cron = require("node-cron");
 const db = require("./config/database");
+const { v4: uuidv4 } = require('uuid');
 const sendRatingEmail = require("./utils/sendRatingEmail");
 const sendRatingSMS = require("./utils/sendRatingSMS");
 
@@ -29,6 +30,35 @@ cron.schedule("0 * * * *", async () => {
     }
 
     for (let waiver of waivers) {
+      // Generate or get existing rating token for this waiver
+      let token;
+      try {
+        // Check if token already exists for this waiver
+        const [existingTokens] = await db.query(
+          'SELECT token FROM rating_tokens WHERE waiver_id = ?',
+          [waiver.waiver_id]
+        );
+
+        if (existingTokens.length > 0) {
+          token = existingTokens[0].token;
+          console.log(`Using existing token for waiver ID ${waiver.waiver_id}`);
+        } else {
+          // Generate new token
+          token = uuidv4();
+          await db.query(
+            'INSERT INTO rating_tokens (waiver_id, token, used) VALUES (?, ?, 0)',
+            [waiver.waiver_id, token]
+          );
+          console.log(`Generated new token for waiver ID ${waiver.waiver_id}`);
+        }
+      } catch (err) {
+        console.error(`❌ Token generation failed for waiver ID ${waiver.waiver_id}:`, err.message);
+        continue;
+      }
+
+      // Add token to waiver object for email/SMS functions
+      waiver.ratingToken = token;
+
       // 📧 EMAIL SENDING
       if (!waiver.rating_email_sent) {
         try {

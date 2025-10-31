@@ -71,10 +71,23 @@ const AdminFeedbackPage = () => {
       )
     },
     {
+      name: "Waiver ID",
+      selector: row => row.waiver_id || "-",
+      sortable: true,
+      width: "100px"
+    },
+    {
       name: "Rating",
       selector: row => row.rating || "-",
       sortable: true,
       width: "100px"
+    },
+    {
+      name: "Visit Date",
+      selector: row => row.visit_date ? convertToEST(row.visit_date) : "-",
+      sortable: true,
+      wrap: true,
+      minWidth: "150px"
     },
     {
       name: "Issue",
@@ -121,6 +134,12 @@ const AdminFeedbackPage = () => {
   const ExpandedComponent = ({ data }) => (
     <div style={{ padding: "10px 20px" }}>
       <div>
+        <strong>Waiver ID:</strong> {data.waiver_id || "-"}
+      </div>
+      <div style={{ marginTop: "10px" }}>
+        <strong>Visit Date:</strong> {data.visit_date ? convertToEST(data.visit_date) : "-"}
+      </div>
+      <div style={{ marginTop: "10px" }}>
         <strong>Issue:</strong> {data.issue || "-"}
       </div>
       <div style={{ marginTop: "10px" }}>
@@ -130,7 +149,7 @@ const AdminFeedbackPage = () => {
         <strong>Message:</strong> {data.message || "-"}
       </div>
       <div style={{ marginTop: "10px" }}>
-        <strong>Date:</strong> {data.created_at ? convertToEST(data.created_at) : "-"}
+        <strong>Date Submitted:</strong> {data.created_at ? convertToEST(data.created_at) : "-"}
       </div>
     </div>
   );

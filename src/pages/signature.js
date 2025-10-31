@@ -16,7 +16,6 @@ function Signature() {
   const dispatch = useDispatch();
   const sigPadRef = useRef();
 
-  const [signatureImage, setSignatureImage] = useState(null);
   const [customerData, setCustomerData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -91,7 +90,6 @@ function Signature() {
             
             if (signatureResponse.data?.signature) {
               const signatureData = signatureResponse.data.signature;
-              setSignatureImage(signatureData);
               setOriginalSignature(signatureData); // Store original for comparison
               
               // Pre-fill the signature pad
@@ -183,7 +181,6 @@ function Signature() {
 
   const handleClearSignature = () => {
     sigPadRef.current.clear();
-    setSignatureImage(null);
     setUserModifiedSignature(true); // Mark as modified when user clears
   };
 
@@ -315,7 +312,6 @@ function Signature() {
       // Restore original composition operation
       ctx.globalCompositeOperation = currentCompositeOperation;
 
-      setSignatureImage(signatureData);
       dispatch(setSignatureImageRedux(signatureData));
 
       const payload = {
@@ -360,11 +356,6 @@ function Signature() {
   };
 
   const handleSubmit = async () => {
-    // Get current signature
-    const currentSignature = sigPadRef.current && !sigPadRef.current.isEmpty() 
-      ? sigPadRef.current.toDataURL("image/jpeg", 0.6) 
-      : null;
-    
     // Check if this is an existing user viewing a completed waiver
     // A completed waiver has originalSignature (loaded from snapshot)
     const isViewingCompletedWaiver = originalSignature !== null;

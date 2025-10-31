@@ -9,6 +9,7 @@ const waiverRoutes = require('./routes/waiverRoutes');
 const authRoutes = require('./routes/authRoutes');
 const staffRoutes = require('./routes/staffRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
+const ratingRoutes = require('./routes/ratingRoutes');
 
 // Initialize rating email/SMS scheduler
 require('./ratingEmailScheduler');
@@ -62,6 +63,7 @@ app.use('/api/waivers', waiverRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/rating', ratingRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

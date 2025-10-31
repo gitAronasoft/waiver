@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from 'react-toastify';
 import { BACKEND_URL } from '../config';
-import { setCurrentStep } from "../store/slices/waiverSessionSlice";
+import { setCurrentStep, setCustomerId } from "../store/slices/waiverSessionSlice";
 
 function VerifyOtp() {
   const [otp, setOtp] = useState("");
@@ -65,6 +65,12 @@ const verifyOtp = async (otpValue) => {
 
     if (res.data.authenticated) {
       toast.success("Phone number verified successfully!");
+      
+      // Set customerId in Redux for existing customers to fix Rules page redirect
+      if (res.data.userId) {
+        dispatch(setCustomerId(res.data.userId));
+        console.log("Set customerId in Redux:", res.data.userId);
+      }
 
       if (flowType === "existing") {
         dispatch(setCurrentStep('DASHBOARD'));

@@ -2,7 +2,7 @@
 const nodemailer = require("nodemailer");
 
 async function sendRatingEmail(customer) {
-  const ratingLink = `${process.env.REACT_LINK_BASE || "http://localhost:3000"}/rate/${customer.id}`;
+  const ratingLink = `${process.env.REACT_LINK_BASE || "http://localhost:3000"}/rate/${customer.ratingToken}`;
 
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',

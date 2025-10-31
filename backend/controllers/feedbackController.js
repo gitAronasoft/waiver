@@ -184,6 +184,7 @@ const getAllFeedback = async (req, res) => {
       SELECT 
         f.id,
         f.user_id,
+        f.waiver_id,
         f.rating,
         f.message,
         f.issue,
@@ -192,9 +193,11 @@ const getAllFeedback = async (req, res) => {
         c.first_name,
         c.last_name,
         c.email,
-        c.cell_phone
+        c.cell_phone,
+        w.signed_at as visit_date
       FROM feedback f
       JOIN users c ON f.user_id = c.id
+      LEFT JOIN waivers w ON f.waiver_id = w.id
       ORDER BY f.created_at DESC
     `);
 

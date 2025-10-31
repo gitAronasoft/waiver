@@ -1,48 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import { BACKEND_URL } from '../config';
 
 export default function FeedbackPage() {
-  const query = new URLSearchParams(useLocation().search);
-const userId = query.get('userId');
-const feedbackId = query.get('feedbackId');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const { token, rating, customerName } = location.state || {};
 
   const [feedback, setFeedback] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [customerName, setCustomerName] = useState('');
   const [issue, setIssue] = useState('');
   const [staffName, setStaffName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [stars] = useState(rating || 0);
 
   useEffect(() => {
-    axios
-      .get(`${BACKEND_URL}/api/feedback/rate/${userId}`)
-      .then((res) => {
-        const { first_name, last_name } = res.data;
-        setCustomerName(`${first_name} ${last_name}`);
-      })
-      .catch((err) => console.error('Failed to fetch customer name:', err));
-  }, [userId]);
+    if (!token || !rating) {
+      toast.error('Invalid feedback session. Please use the link from your email or SMS.');
+      setTimeout(() => {
+        navigate('/');
+      }, 3000);
+    }
+  }, [token, rating, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      await axios.post(`${BACKEND_URL}/api/feedback/send-feedback`, {
-        user_id: userId,
-        rating: feedbackId,
+      await axios.post(`${BACKEND_URL}/api/rating/submit-feedback`, {
+        token,
+        rating,
         issue,
         staff_name: staffName,
         message: feedback
       });
 
-      toast.success('Thank you for your feedback. We appreciate your input and will use it to improve our service.');
+      toast.success('Thank you for your valuable feedback! We appreciate your input and will use it to improve our service.');
       setSubmitted(true);
     } catch (err) {
-      toast.error(err.response?.data?.error || err.response?.data?.message || "We couldn't submit your feedback. Please try again later.");
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || "We couldn't submit your feedback. Please try again.";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -66,6 +67,7 @@ const feedbackId = query.get('feedbackId');
                 {!submitted ? (
                   <>
                     <h4>We’re sorry your experience wasn’t perfect</h4>
+                    <p className="mb-1">You rated your visit: {stars} {stars === 1 ? 'star' : 'stars'} ⭐</p>
                     <p>Please let us know what we could do better:</p>
                     <form onSubmit={handleSubmit}>
                       <div className="mb-3 text-start">

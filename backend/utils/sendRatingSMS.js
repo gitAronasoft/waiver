@@ -3,7 +3,7 @@ const twilio = require('twilio');
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 async function sendRatingSMS(customer) {
- const ratingLink = `${process.env.REACT_LINK_BASE || 'http://localhost:3000'}/rate/${customer.id}`;
+ const ratingLink = `${process.env.REACT_LINK_BASE || 'http://localhost:3000'}/rate/${customer.ratingToken}`;
 
 
   let formattedPhone = customer.cell_phone;

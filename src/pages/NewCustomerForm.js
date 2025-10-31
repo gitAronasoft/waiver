@@ -16,6 +16,7 @@ import {
   setViewMode,
   setFlowType
 } from "../store/slices/waiverSessionSlice";
+import LazyImage from "../components/LazyImage";
 
 function NewCustomerForm() {
   const navigate = useNavigate();
@@ -301,7 +302,7 @@ function NewCustomerForm() {
           <div className="col-12 col-md-8 col-xl-8">
             <div className="step-two step-three">
               <div className="logo">
-                <img
+                <LazyImage
                   className="img-fluid"
                   src="/assets/img/logo.png"
                   alt="logo"

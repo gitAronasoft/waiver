@@ -11,3 +11,31 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Performance optimizations for images */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  will-change: auto;
+}
+
+/* Smooth fade-in effect for lazy-loaded images */
+img.loading {
+  opacity: 0;
+  transition: opacity 0.6s ease-in-out;
+}
+
+img.loaded {
+  opacity: 1;
+  transition: opacity 0.6s ease-in-out;
+}
+
+/* Prevent layout shift during image load */
+img[width][height] {
+  height: auto;
+}
+
+/* Optimize rendering performance */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

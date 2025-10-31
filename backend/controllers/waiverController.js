@@ -1217,12 +1217,12 @@ const getLatestWaiver = async (req, res) => {
     const userId = users[0].id;
     const countryCode = users[0].country_code || "+1";
 
-    // Get the most recent waiver with ALL signer snapshot fields and minors_snapshot
+    // Get the most recent waiver with ALL signer snapshot fields, minors_snapshot, and signature
     const [waivers] = await db.query(
       `SELECT id, user_id, signed_at, created_at,
               signer_name, signer_email, signer_address, signer_city, 
               signer_province, signer_postal, signer_dob,
-              minors_snapshot
+              minors_snapshot, signature_image
        FROM waivers 
        WHERE user_id = ? 
        ORDER BY created_at DESC 
@@ -1275,7 +1275,8 @@ const getLatestWaiver = async (req, res) => {
       signedAt: waiver.signed_at,
       createdAt: waiver.created_at,
       customer: customerData,
-      minors: minors
+      minors: minors,
+      signature: waiver.signature_image || null
     });
   } catch (error) {
     const errorId = `ERR_${Date.now()}`;

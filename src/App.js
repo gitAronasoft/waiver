@@ -1,32 +1,32 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-
-import WelcomePage from "./pages/WelcomePage";
-import NewCustomerForm from "./pages/NewCustomerForm";
-import ExistingCustomerLogin from "./pages/ExistingCustomerLogin";
-import VerifyOtpPage from "./pages/VerifyOtpPage";
-import ConfirmCustomerInfo from "./pages/ConfirmCustomerInfo";
-import RuleReminder from "./pages/RuleReminder";
-import SignaturePage from "./pages/SignaturePage";
-import AllDone from "./pages/AllDone";
-import StarRating from "./pages/StarRatingPage";
-import Feedback from "./pages/FeedbackPage";
-import LoginAdmin from "./pages/admin/login";
-import Home from "./pages/admin/home";
-import History from "./pages/admin/History";
-import ClientProfilePage from "./pages/admin/ClientProfilePage";
-import ForgotPasswordForm from "./pages/admin/forgetPassword";
-import ResetPasswordForm from "./pages/admin/ResetPassword";
-import ChangePassword from "./pages/admin/ChangePassword";
-import StaffList from "./pages/admin/StaffList";
-import AddStaff from "./pages/admin/AddStaff";
-import UpdateStaff from "./pages/admin/UpdateStaff";
-import AdminProfile from "./pages/admin/AdminProfile";
-import AdminFeedbackPage from "./pages/admin/AdminFeedbackPage";
 
 import AdminPrivateRoute from "./pages/components/AdminPrivateRoute";
 import LoadingOverlay from "./components/LoadingOverlay";
-import NotFound from "./pages/NotFound";
+
+const WelcomePage = lazy(() => import("./pages/WelcomePage"));
+const NewCustomerForm = lazy(() => import("./pages/NewCustomerForm"));
+const ExistingCustomerLogin = lazy(() => import("./pages/ExistingCustomerLogin"));
+const VerifyOtpPage = lazy(() => import("./pages/VerifyOtpPage"));
+const ConfirmCustomerInfo = lazy(() => import("./pages/ConfirmCustomerInfo"));
+const RuleReminder = lazy(() => import("./pages/RuleReminder"));
+const SignaturePage = lazy(() => import("./pages/SignaturePage"));
+const AllDone = lazy(() => import("./pages/AllDone"));
+const StarRating = lazy(() => import("./pages/StarRatingPage"));
+const Feedback = lazy(() => import("./pages/FeedbackPage"));
+const LoginAdmin = lazy(() => import("./pages/admin/login"));
+const Home = lazy(() => import("./pages/admin/home"));
+const History = lazy(() => import("./pages/admin/History"));
+const ClientProfilePage = lazy(() => import("./pages/admin/ClientProfilePage"));
+const ForgotPasswordForm = lazy(() => import("./pages/admin/forgetPassword"));
+const ResetPasswordForm = lazy(() => import("./pages/admin/ResetPassword"));
+const ChangePassword = lazy(() => import("./pages/admin/ChangePassword"));
+const StaffList = lazy(() => import("./pages/admin/StaffList"));
+const AddStaff = lazy(() => import("./pages/admin/AddStaff"));
+const UpdateStaff = lazy(() => import("./pages/admin/UpdateStaff"));
+const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
+const AdminFeedbackPage = lazy(() => import("./pages/admin/AdminFeedbackPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 function AppContent() {
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +42,8 @@ function AppContent() {
   return (
     <>
       <LoadingOverlay isVisible={isLoading} />
-      <Routes>
+      <Suspense fallback={<LoadingOverlay isVisible={true} />}>
+        <Routes>
         {/* Admin Public Route */}
         <Route path="/admin/login" element={<LoginAdmin />} />
 
@@ -148,6 +149,7 @@ function AppContent() {
         <Route path="*" element={<NotFound />} />
 
       </Routes>
+      </Suspense>
     </>
   );
 }

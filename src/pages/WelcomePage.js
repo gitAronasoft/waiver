@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setFlowType, clearWaiverSession } from "../store/slices/waiverSessionSlice";
+import LazyImage from "../components/LazyImage";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export default function Index() {
         <div className="row">
           <div className="col-md-10 mx-auto">
             <div className="logo-img">
-              <img
+              <LazyImage
                 className="img-fluid"
                 src="/assets/img/logo.png"
                 alt="logo"
@@ -39,7 +40,7 @@ export default function Index() {
             <div>
               <h2 className="h5-heading">
                 Hi, Welcome! {" "}
-                <img
+                <LazyImage
                   className="img-fluid"
                   src="/assets/img/image 296.png"
                   alt="icon"

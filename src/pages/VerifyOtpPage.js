@@ -4,7 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from 'react-toastify';
 import { BACKEND_URL } from '../config';
-import { setCurrentStep, setCustomerId, setWaiverId, setViewMode, setCustomerData, setMinors } from "../store/slices/waiverSessionSlice";
+import { setCurrentStep, setCustomerId, setWaiverId, setViewMode, setCustomerData, setMinors, setSignature } from "../store/slices/waiverSessionSlice";
+import LazyImage from "../components/LazyImage";
 
 function VerifyOtp() {
   const [otp, setOtp] = useState("");
@@ -93,6 +94,12 @@ const verifyOtp = async (otpValue) => {
               dispatch(setMinors(latestWaiverRes.data.minors));
               console.log("✅ Stored minors from waiver snapshot in Redux");
             }
+            
+            // Store signature from latest waiver
+            if (latestWaiverRes.data.signature) {
+              dispatch(setSignature(latestWaiverRes.data.signature));
+              console.log("✅ Stored signature from latest waiver in Redux");
+            }
           }
         } catch (error) {
           console.error("Error fetching latest waiver:", error);
@@ -143,7 +150,7 @@ const verifyOtp = async (otpValue) => {
           <div className="col-12 col-md-8 col-xl-8">
             <div className="step-two step-three">
               <div className="logo mb-3">
-                <img
+                <LazyImage
                   className="img-fluid"
                   src="/assets/img/logo.png"
                   alt="logo"

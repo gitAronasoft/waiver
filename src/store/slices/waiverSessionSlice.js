@@ -20,6 +20,7 @@ const initialState = {
     work_phone: '',
   },
   minors: [],
+  signature: null,
   progress: {
     currentStep: 'INITIAL',
     isReturning: false,
@@ -52,6 +53,9 @@ const waiverSessionSlice = createSlice({
     setMinors: (state, action) => {
       state.minors = action.payload;
     },
+    setSignature: (state, action) => {
+      state.signature = action.payload;
+    },
     setProgress: (state, action) => {
       state.progress = { ...state.progress, ...action.payload };
     },
@@ -72,6 +76,7 @@ export const {
   setFlowType,
   setCustomerData,
   setMinors,
+  setSignature,
   setProgress,
   setCurrentStep,
   setViewMode,

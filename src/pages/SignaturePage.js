@@ -30,9 +30,10 @@ function Signature() {
   const createNewWaiver = useSelector((state) => state.waiverSession.progress.createNewWaiver) || false;
   const hasDataModifications = useSelector((state) => state.waiverSession.progress.hasDataModifications) || false;
   
-  // Get customer data and minors from Redux (saved by ConfirmCustomerInfo page)
+  // Get customer data, minors, and signature from Redux (saved by ConfirmCustomerInfo page and VerifyOtpPage)
   const reduxCustomerData = useSelector((state) => state.waiverSession.customerData);
   const reduxMinors = useSelector((state) => state.waiverSession.minors);
+  const reduxSignature = useSelector((state) => state.waiverSession.signature);
 
   // Route protection: Redirect if accessed directly without valid state
   useEffect(() => {
@@ -74,40 +75,27 @@ function Signature() {
     const isNewCustomer = customerType === "new";
     const shouldPreFillSignature = !isNewCustomer && (waiverId || (viewMode && !createNewWaiver));
     
-    if (shouldPreFillSignature && (waiverId || customerId)) {
-      const loadSignature = async () => {
-        try {
-          const signatureResponse = waiverId
-            ? await axios.get(`${BACKEND_URL}/api/waivers/get-signature?waiverId=${waiverId}`)
-            : await axios.get(`${BACKEND_URL}/api/waivers/get-signature?customerId=${customerId}`);
-          
-          if (signatureResponse.data?.signature) {
-            const signatureData = signatureResponse.data.signature;
-            
-            // Pre-fill the signature pad
-            setTimeout(() => {
-              if (sigPadRef.current) {
-                try {
-                  sigPadRef.current.fromDataURL(signatureData);
-                } catch (error) {
-                  console.error("Failed to pre-fill signature:", error);
-                }
-              }
-            }, 100);
+    if (shouldPreFillSignature && reduxSignature) {
+      // Use signature from Redux (loaded by VerifyOtpPage after OTP verification)
+      console.log("✅ Loading signature from Redux (no API call needed)");
+      setTimeout(() => {
+        if (sigPadRef.current) {
+          try {
+            sigPadRef.current.fromDataURL(reduxSignature);
+            console.log("✅ Signature pre-filled from Redux");
+          } catch (error) {
+            console.error("Failed to pre-fill signature from Redux:", error);
           }
-        } catch (error) {
-          console.log("No previous signature found or error fetching:", error);
-          // Not a critical error, user can still sign manually
         }
-      };
-      
-      loadSignature();
+      }, 100);
     } else if (isNewCustomer) {
       console.log("New customer flow - skipping signature fetch");
+    } else if (shouldPreFillSignature && !reduxSignature) {
+      console.log("No signature found in Redux for existing customer");
     }
     
     setLoading(false);
-  }, [reduxCustomerData, reduxMinors, navigate, waiverId, customerId, viewMode, createNewWaiver, customerType]);
+  }, [reduxCustomerData, reduxMinors, reduxSignature, navigate, waiverId, customerId, viewMode, createNewWaiver, customerType]);
 
   const handleChange = (e) => {
     const { name, type, checked, value } = e.target;

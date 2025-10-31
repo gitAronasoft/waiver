@@ -207,7 +207,7 @@ const createWaiver = async (req, res) => {
             await connection.rollback();
             return res.status(400).json({
               error: 'Invalid phone number',
-              message: 'The phone number you provided is not valid. Please check the country code and phone number, then try again.',
+              message: 'The phone number you entered doesn\'t appear to be valid. Please double-check your phone number (including area code) and try again. If you continue to experience issues, please visit our front desk or contact us at info@skate-play.com for assistance.',
               errorId
             });
           }

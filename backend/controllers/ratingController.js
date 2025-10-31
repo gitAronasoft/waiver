@@ -10,7 +10,10 @@ const validateToken = async (req, res) => {
     const { token } = req.params;
 
     if (!token) {
-      return res.status(400).json({ error: 'Token is required' });
+      return res.status(400).json({ 
+        error: 'Missing token',
+        message: 'No rating token was provided. Please use the link from your email or SMS.'
+      });
     }
 
     // Check if token exists and is not used
@@ -22,7 +25,7 @@ const validateToken = async (req, res) => {
     if (tokens.length === 0) {
       return res.status(404).json({ 
         error: 'Invalid rating link',
-        message: 'This rating link is not valid. Please use the link from your email or SMS.' 
+        message: 'This rating link is not recognized. Please check the link in your email or SMS, or contact us if you need assistance.' 
       });
     }
 
@@ -31,7 +34,7 @@ const validateToken = async (req, res) => {
     if (tokenData.used === 1) {
       return res.status(400).json({ 
         error: 'Link already used',
-        message: 'You have already submitted your rating using this link. Thank you for your feedback!' 
+        message: 'You have already submitted your rating using this link. Thank you so much for your feedback!' 
       });
     }
 
@@ -46,7 +49,7 @@ const validateToken = async (req, res) => {
     if (waivers.length === 0) {
       return res.status(404).json({ 
         error: 'Waiver not found',
-        message: 'The waiver associated with this rating link could not be found.' 
+        message: 'We couldn\'t find the visit associated with this rating link. Please contact us at info@skate-play.com and we\'ll help you out!' 
       });
     }
 
@@ -70,8 +73,8 @@ const validateToken = async (req, res) => {
     });
 
     res.status(500).json({
-      error: 'Unable to validate rating link',
-      message: 'We encountered an error while validating your rating link. Please try again or contact support.',
+      error: 'Validation error',
+      message: 'We encountered a technical issue while validating your rating link. Please try again in a moment, or reach out to us at info@skate-play.com if the problem persists.',
       errorId
     });
   }
@@ -86,7 +89,10 @@ const submitFiveStar = async (req, res) => {
     const { token } = req.body;
 
     if (!token) {
-      return res.status(400).json({ error: 'Token is required' });
+      return res.status(400).json({ 
+        error: 'Missing token',
+        message: 'No rating token was provided. Please use the link from your email or SMS.'
+      });
     }
 
     // Validate token
@@ -98,7 +104,7 @@ const submitFiveStar = async (req, res) => {
     if (tokens.length === 0) {
       return res.status(400).json({ 
         error: 'Invalid or already used token',
-        message: 'This rating link is no longer valid.'
+        message: 'This rating link has expired or has already been used. Thank you for your interest in providing feedback!'
       });
     }
 
@@ -111,7 +117,10 @@ const submitFiveStar = async (req, res) => {
     );
 
     if (waivers.length === 0) {
-      return res.status(404).json({ error: 'Waiver not found' });
+      return res.status(404).json({ 
+        error: 'Waiver not found',
+        message: 'We couldn\'t find the visit associated with this rating. Please contact us if you need assistance.'
+      });
     }
 
     const waiver = waivers[0];
@@ -123,7 +132,7 @@ const submitFiveStar = async (req, res) => {
       [
         waiver.user_id,
         tokenData.waiver_id,
-        'Customer gave 5 stars and opted to share their positive experience on Google Reviews.',
+        'Customer gave 5 stars and kindly shared their positive experience on Google Reviews.',
         'No issues - Outstanding visit'
       ]
     );
@@ -136,7 +145,7 @@ const submitFiveStar = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Thank you for your 5-star rating! Redirecting you to Google Reviews...'
+      message: 'Thank you for the amazing 5-star rating! Redirecting you to share your experience on Google Reviews...'
     });
 
   } catch (error) {
@@ -150,13 +159,13 @@ const submitFiveStar = async (req, res) => {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({
         error: 'Rating already submitted',
-        message: 'You have already submitted a rating for this visit. Thank you!'
+        message: 'You have already submitted a rating for this visit. Thank you so much for your feedback!'
       });
     }
 
     res.status(500).json({
       error: 'Unable to save rating',
-      message: 'We encountered an error while saving your rating. Please try again.',
+      message: 'We encountered a technical issue while saving your rating. Please try again in a moment, or contact us at info@skate-play.com if the problem persists.',
       errorId
     });
   }
@@ -172,11 +181,17 @@ const submitFeedback = async (req, res) => {
 
     // Validate required fields
     if (!token) {
-      return res.status(400).json({ error: 'Token is required' });
+      return res.status(400).json({ 
+        error: 'Missing token',
+        message: 'No rating token was provided. Please use the link from your email or SMS.'
+      });
     }
 
     if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: 'Valid rating (1-5) is required' });
+      return res.status(400).json({ 
+        error: 'Invalid rating',
+        message: 'Please provide a rating between 1 and 5 stars.'
+      });
     }
 
     // Validate token
@@ -188,7 +203,7 @@ const submitFeedback = async (req, res) => {
     if (tokens.length === 0) {
       return res.status(400).json({ 
         error: 'Invalid or already used token',
-        message: 'This rating link is no longer valid.'
+        message: 'This rating link has expired or has already been used. Thank you for your interest in providing feedback!'
       });
     }
 
@@ -201,7 +216,10 @@ const submitFeedback = async (req, res) => {
     );
 
     if (waivers.length === 0) {
-      return res.status(404).json({ error: 'Waiver not found' });
+      return res.status(404).json({ 
+        error: 'Waiver not found',
+        message: 'We couldn\'t find the visit associated with this feedback. Please contact us if you need assistance.'
+      });
     }
 
     const waiver = waivers[0];
@@ -228,7 +246,7 @@ const submitFeedback = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Thank you for your valuable feedback! We appreciate your input and will use it to improve our service.'
+      message: 'Thank you so much for your valuable feedback! We genuinely appreciate you taking the time to help us improve.'
     });
 
   } catch (error) {
@@ -241,14 +259,14 @@ const submitFeedback = async (req, res) => {
     // Check for duplicate entry error
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({
-        error: 'Rating already submitted',
-        message: 'You have already submitted a rating for this visit. Thank you!'
+        error: 'Feedback already submitted',
+        message: 'You have already submitted feedback for this visit. Thank you so much for sharing your thoughts with us!'
       });
     }
 
     res.status(500).json({
       error: 'Unable to save feedback',
-      message: 'We encountered an error while saving your feedback. Please try again.',
+      message: 'We encountered a technical issue while saving your feedback. Please try again in a moment, or contact us at info@skate-play.com if the problem persists.',
       errorId
     });
   }

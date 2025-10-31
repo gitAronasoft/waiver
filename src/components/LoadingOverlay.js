@@ -8,7 +8,8 @@ const LoadingOverlay = ({ isVisible }) => {
   return (
     <div className={`loading-overlay ${isVisible ? 'visible' : ''}`}>
       <div className="loading-content">
-        <AnimatedLogo size={200} />
+        <AnimatedLogo size={180} />
+        <div className="loading-text">Loading...</div>
       </div>
     </div>
   );

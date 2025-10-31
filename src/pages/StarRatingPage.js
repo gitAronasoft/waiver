@@ -26,13 +26,13 @@ useEffect(() => {
         setCustomerName(response.data.customer_name);
       } else {
         setTokenValid(false);
-        setErrorMessage(response.data.message || 'Invalid rating link');
+        setErrorMessage(response.data.message || 'This rating link is no longer valid');
       }
     } catch (err) {
       setTokenValid(false);
-      const message = err.response?.data?.message || err.response?.data?.error || 'This rating link is no longer valid or has already been used.';
+      const message = err.response?.data?.message || err.response?.data?.error || 'This rating link has expired or has already been used. Thank you for your interest!';
       setErrorMessage(message);
-      toast.error(message);
+      toast.error(message, { autoClose: 5000 });
     } finally {
       setLoading(false);
     }
@@ -56,11 +56,13 @@ useEffect(() => {
       if (rate === 5) {
         await axios.post(`${BACKEND_URL}/api/rating/submit-five-star`, { token });
         
-        toast.success('Thank you for your 5-star rating! Redirecting to Google Reviews...');
+        toast.success('🎉 Thank you for the amazing 5-star rating! We appreciate you taking the time to share your experience.', {
+          autoClose: 2500
+        });
         
         setTimeout(() => {
           window.location.href = GOOGLE_REVIEW_LINK;
-        }, 2000);
+        }, 2500);
       } else {
         navigate('/feedback', { 
           state: { 
@@ -72,59 +74,80 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Rating error:', error);
-      const errorMsg = error.response?.data?.message || error.response?.data?.error || 'We encountered an error while submitting your rating. Please try again.';
-      toast.error(errorMsg);
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Oops! We encountered an issue while saving your rating. Please try again, or contact us if the problem persists.';
+      toast.error(errorMsg, { autoClose: 5000 });
       setSubmitting(false);
     }
   };
 
   return (
     <>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="top-center" autoClose={3000} />
       <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center bg-light">
         <div className="container text-center">
           <div className="row justify-content-center">
             <div className="col-12 col-md-10 col-lg-8">
-              <div className="p-4 bg-white rounded shadow-sm">
+              <div className="p-4 p-md-5 bg-white rounded shadow-sm">
                 <img
-                  className="img-fluid mb-3"
+                  className="img-fluid mb-4"
                   src="/assets/img/logo.png"
-                  alt="logo"
-                  style={{ maxWidth: '200px' }}
+                  alt="Skate & Play Logo"
+                  style={{ maxWidth: '220px' }}
                 />
                 {loading ? (
                   <div>
-                    <p className="text-muted">Validating your rating link...</p>
+                    <p className="text-muted mb-3">Validating your rating link...</p>
                     <div className="spinner-border text-primary mt-3" role="status">
                       <span className="visually-hidden">Loading...</span>
                     </div>
                   </div>
                 ) : !tokenValid ? (
                   <div>
-                    <h5 className="text-danger mb-3">⚠️ Invalid Link</h5>
-                    <p>{errorMessage}</p>
-                    <p className="text-muted mt-3">If you believe this is an error, please contact us at info@skate-play.com</p>
+                    <h5 className="text-danger mb-3">⚠️ Invalid or Expired Link</h5>
+                    <p className="text-muted mb-3">{errorMessage}</p>
+                    <p className="text-secondary mt-4" style={{ fontSize: '0.95rem' }}>
+                      If you believe this is a mistake, please reach out to us at{' '}
+                      <a href="mailto:info@skate-play.com" className="text-primary">
+                        info@skate-play.com
+                      </a>
+                      {' '}and we'll be happy to help!
+                    </p>
                   </div>
                 ) : (
                   <>
-                    <h5 className="mb-3">Hi {customerName},</h5>
-                    <h5 className="fw-bold mb-2">We'd love to know how your experience was.</h5>
-                    <p className="fw-bold mb-3">Please take a few seconds to rate your visit:</p>
-                    {submitting && <p className="text-primary">Submitting your rating...</p>}
+                    <h4 className="mb-3">Hi {customerName}! 👋</h4>
+                    <h5 className="fw-bold mb-2" style={{ color: '#374151' }}>
+                      How was your visit to Skate & Play?
+                    </h5>
+                    <p className="text-muted mb-4">
+                      Your feedback helps us create better experiences for everyone!
+                    </p>
+                    {submitting && (
+                      <p className="text-primary mb-3">
+                        <span className="spinner-border spinner-border-sm me-2" />
+                        Submitting your rating...
+                      </p>
+                    )}
 
                     <div className="d-flex justify-content-center mb-4">
                       <Rating
                         onClick={handleRating}
-                        size={50}
+                        size={55}
                         initialValue={0}
                         allowFraction={false}
                         transition
                         readonly={submitting}
+                        fillColor="#fbbf24"
+                        emptyColor="#e5e7eb"
                       />
                     </div>
 
-                    <h6 className="mb-2">It only takes a moment and really helps us improve.</h6>
-                    <h6>Thanks for being part of the fun — we hope to see you again soon!</h6>
+                    <p className="text-secondary" style={{ fontSize: '0.9rem' }}>
+                      Tap the stars above to rate your experience
+                    </p>
+                    <p className="text-muted mt-4" style={{ fontSize: '0.85rem' }}>
+                      Thanks for being part of the fun — we hope to see you again soon! 🎉
+                    </p>
                   </>
                 )}
               </div>

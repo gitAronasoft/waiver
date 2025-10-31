@@ -13,13 +13,14 @@ async function sendRatingSMS(customer) {
 
   try {
     await client.messages.create({
-      body: `Hi ${customer.first_name}! Thanks for visiting Skate & Play 🎉 We'd love your feedback. Tap here to rate your visit: ${ratingLink} ⭐`,
+      body: `Hi ${customer.first_name}! 👋 Thanks for visiting Skate & Play! We'd love to hear about your experience. Tap to rate your visit: ${ratingLink} 🌟`,
       from: process.env.TWILIO_PHONE_NUMBER,
       to: formattedPhone
     });
     console.log(`✅ Rating SMS sent to ${formattedPhone}`);
   } catch (err) {
     console.error('❌ Twilio rating SMS error:', err.message);
+    throw err; // Re-throw to let calling function handle it
   }
 }
 

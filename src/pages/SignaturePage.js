@@ -286,8 +286,9 @@ function Signature() {
     // Update Redux with cleaned minors
     dispatch(setMinors(cleanedMinors));
 
-    // Check if modifications exist and create new waiver if needed
-    if ((hasDataModifications || userModifiedSignature) && waiverId) {
+    // Check if modifications exist and create new waiver if needed (ONLY for existing customers)
+    // New customers already have a waiver created in NewCustomerForm, so skip this
+    if ((hasDataModifications || userModifiedSignature) && waiverId && customerType === 'existing') {
       console.log("🔄 Modifications detected - creating new unsigned waiver before signature submission");
       try {
         const stripMask = (val) => (val ? val.replace(/\D/g, "") : "");

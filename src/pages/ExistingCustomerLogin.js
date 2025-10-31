@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import { useMask } from "@react-input/mask";
 import { countryCodes } from "../countryCodes";
 import { BACKEND_URL } from '../config';
-import { setPhone as setReduxPhone, setCurrentStep, setViewMode, setFlowType, setWaiverId, setCustomerData, setMinors } from "../store/slices/waiverSessionSlice";
+import { setPhone as setReduxPhone, setCurrentStep, setViewMode, setFlowType } from "../store/slices/waiverSessionSlice";
 
 function ExistingCustomerLogin() {
   const [phone, setPhone] = useState("");
@@ -119,40 +119,10 @@ function ExistingCustomerLogin() {
       const res = await axios.post(`${BACKEND_URL}/api/auth/send-otp`, { cell_phone: fullPhone, phone: cleanPhone });
       toast.success(res.data.message);
 
-      // After OTP is sent successfully, fetch latest waiver and full customer data
       console.log("✅ OTP sent successfully");
 
-      try {
-        // Fetch customer info to pre-populate Redux
-        const customerInfoRes = await axios.get(
-          `${BACKEND_URL}/api/waivers/customer-info?phone=${cleanPhone}`
-        );
-
-        if (customerInfoRes.data.customer) {
-          const data = customerInfoRes.data.customer;
-          dispatch(setCustomerData(data));
-          console.log('✅ Stored customer data in Redux');
-
-          if (customerInfoRes.data.minors) {
-            dispatch(setMinors(customerInfoRes.data.minors));
-            console.log('✅ Stored minors data in Redux');
-          }
-        }
-
-        // Also fetch latest waiver ID if exists
-        const latestWaiverRes = await axios.get(
-          `${BACKEND_URL}/api/waivers/latest-waiver?phone=${cleanPhone}`
-        );
-
-        if (latestWaiverRes.data.waiverId) {
-          dispatch(setWaiverId(latestWaiverRes.data.waiverId));
-          console.log(`✅ Stored latest waiverId in Redux: ${latestWaiverRes.data.waiverId}`);
-        }
-      } catch (err) {
-        console.warn("Could not fetch customer data:", err);
-        // Non-critical, continue with flow
-      }
-
+      // Store phone and flow type in Redux
+      // Customer data and waiver will be fetched after OTP verification in VerifyOtpPage
       dispatch(setReduxPhone(cleanPhone));
       dispatch(setFlowType('existing'));
       dispatch(setViewMode(false));
@@ -170,7 +140,7 @@ function ExistingCustomerLogin() {
       <div className="container text-center">
         <div className="row">
           <div className="col-md-2">
-            <div className="back-btn" style={{ 'margin-top': '50px'}}>
+            <div className="back-btn" style={{ 'marginTop': '50px'}}>
               <Link to="/">
                 <img
                   className="img-fluid"

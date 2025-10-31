@@ -73,16 +73,32 @@ const verifyOtp = async (otpValue) => {
       }
 
       if (flowType === "existing") {
-        // Fetch latest waiver and redirect to review information
+        // Fetch latest waiver with complete customer data and minors from waiver snapshot
         try {
           const latestWaiverRes = await axios.get(`${BACKEND_URL}/api/waivers/latest-waiver?phone=${phone}`);
+          
           if (latestWaiverRes.data.waiverId) {
             dispatch(setWaiverId(latestWaiverRes.data.waiverId));
             dispatch(setViewMode(true));
-            console.log("Loaded latest waiver:", latestWaiverRes.data.waiverId);
+            console.log("✅ Loaded latest waiver:", latestWaiverRes.data.waiverId);
+            
+            // Store complete customer data from waiver signer snapshot
+            if (latestWaiverRes.data.customer) {
+              dispatch(setCustomerData(latestWaiverRes.data.customer));
+              console.log("✅ Stored customer data from waiver snapshot in Redux");
+            }
+            
+            // Store minors from waiver minors_snapshot
+            if (latestWaiverRes.data.minors) {
+              dispatch(setMinors(latestWaiverRes.data.minors));
+              console.log("✅ Stored minors from waiver snapshot in Redux");
+            }
           }
         } catch (error) {
           console.error("Error fetching latest waiver:", error);
+          toast.error("Unable to load your waiver information. Please try again.");
+          setLoading(false);
+          return;
         }
         dispatch(setCurrentStep('CONFIRM_INFO'));
         navigate("/review-information", { replace: true });

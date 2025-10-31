@@ -1653,7 +1653,7 @@ const getSignature = async (req, res) => {
 
 /**
  * Gets the latest (most recent) waiver for a customer by phone number
- * Returns waiverId for existing customers to auto-load in confirm-info page
+ * Returns complete waiver data with signer snapshot and minors for existing customers
  */
 const getLatestWaiver = async (req, res) => {
   try {
@@ -1667,7 +1667,7 @@ const getLatestWaiver = async (req, res) => {
 
     // Get user by phone
     const [users] = await db.query(
-      `SELECT id FROM users WHERE cell_phone = ? LIMIT 1`,
+      `SELECT id, country_code FROM users WHERE cell_phone = ? LIMIT 1`,
       [phone]
     );
 
@@ -1679,10 +1679,14 @@ const getLatestWaiver = async (req, res) => {
     }
 
     const userId = users[0].id;
+    const countryCode = users[0].country_code || "+1";
 
-    // Get the most recent waiver for this user
+    // Get the most recent waiver with ALL signer snapshot fields and minors_snapshot
     const [waivers] = await db.query(
-      `SELECT id, signed_at, created_at 
+      `SELECT id, user_id, signed_at, created_at,
+              signer_name, signer_email, signer_address, signer_city, 
+              signer_province, signer_postal, signer_dob,
+              minors_snapshot
        FROM waivers 
        WHERE user_id = ? 
        ORDER BY created_at DESC 
@@ -1697,10 +1701,45 @@ const getLatestWaiver = async (req, res) => {
       });
     }
 
+    const waiver = waivers[0];
+
+    // Parse signer name into first_name and last_name
+    const nameParts = (waiver.signer_name || "").split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+
+    // Parse minors_snapshot JSON
+    let minors = [];
+    if (waiver.minors_snapshot) {
+      try {
+        minors = JSON.parse(waiver.minors_snapshot);
+      } catch (e) {
+        console.warn("Failed to parse minors_snapshot:", e);
+        minors = [];
+      }
+    }
+
+    // Build customer data object from waiver signer snapshot
+    const customerData = {
+      id: waiver.user_id,
+      first_name: firstName,
+      last_name: lastName,
+      email: waiver.signer_email || "",
+      dob: waiver.signer_dob || "",
+      address: waiver.signer_address || "",
+      city: waiver.signer_city || "",
+      province: waiver.signer_province || "",
+      postal_code: waiver.signer_postal || "",
+      cell_phone: phone,
+      country_code: countryCode,
+    };
+
     res.json({
-      waiverId: waivers[0].id,
-      signedAt: waivers[0].signed_at,
-      createdAt: waivers[0].created_at
+      waiverId: waiver.id,
+      signedAt: waiver.signed_at,
+      createdAt: waiver.created_at,
+      customer: customerData,
+      minors: minors
     });
   } catch (error) {
     const errorId = `ERR_${Date.now()}`;

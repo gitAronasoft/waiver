@@ -1,0 +1,57 @@
+/* Loading Overlay - Simple and Clean */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.loading-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Loading Content - Simple Fade */
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: simpleFadeIn 0.4s ease forwards;
+}
+
+/* Loading Text */
+.loading-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #6B46C1;
+  letter-spacing: 0.5px;
+}
+
+/* Simple Fade In Animation */
+@keyframes simpleFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Respect user preferences for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .loading-overlay,
+  .loading-content {
+    animation: none;
+    transition: none;
+  }
+}

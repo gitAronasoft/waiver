@@ -117,14 +117,28 @@ const createWaiver = async (req, res) => {
       console.log(`✅ Prepared ${minors.length} minor(s) for waiver snapshot`);
     }
 
-    // Create waiver entry with minors snapshot
+    // Prepare signer snapshot data from user data
+    const signerName = `${first_name} ${last_name}`;
+    const signerEmail = email;
+    const signerAddress = address;
+    const signerCity = city;
+    const signerProvince = province;
+    const signerPostal = postal_code;
+    const signerDob = dob;
+
+    // Create waiver entry with signer snapshot and minors snapshot
     const [waiverResult] = await connection.query(
-      "INSERT INTO waivers (user_id, minors_snapshot, signed_at, completed, verified_by_staff, staff_id) VALUES (?, ?, NULL, 0, 0, 0)",
-      [userId, minorsSnapshot],
+      `INSERT INTO waivers 
+       (user_id, signer_name, signer_email, signer_address, signer_city, 
+        signer_province, signer_postal, signer_dob, minors_snapshot, 
+        signed_at, completed, verified_by_staff, staff_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, 0, 0)`,
+      [userId, signerName, signerEmail, signerAddress, signerCity, 
+       signerProvince, signerPostal, signerDob, minorsSnapshot],
     );
 
     const waiverId = waiverResult.insertId;
-    console.log(`✅ Created waiver (ID: ${waiverId}) for user ${userId}`)
+    console.log(`✅ Created waiver (ID: ${waiverId}) with signer snapshot for user ${userId}`)
 
     // SEND OTP via SMS for all new customer signups
     if (send_otp) {
@@ -641,14 +655,9 @@ const updateCustomer = async (req, res) => {
 const saveSignature = async (req, res) => {
   try {
     const {
-      id,
-      phone,
-      signature,
-      fullName,
-      date,
-      minors,
-      subscribed,
-      consented,
+      id,    
+      signature,  
+      minors
     } = req.body;
 
     // Validate required fields
@@ -695,17 +704,16 @@ const saveSignature = async (req, res) => {
       minors_snapshot: JSON.stringify(checkedMinors)
     };
 
-    // Update the existing waiver (created during user registration) with signature and snapshot
     // Find the most recent unsigned waiver for this user
     const [existingWaivers] = await db.query(
-      "SELECT id FROM waivers WHERE user_id = ? AND signed_at IS NULL ORDER BY created_at DESC LIMIT 1",
+      "SELECT id, signed_at FROM waivers WHERE user_id = ? AND signed_at IS NULL ORDER BY created_at DESC LIMIT 1",
       [id],
     );
 
     let waiverId;
     
     if (existingWaivers.length > 0) {
-      // Update existing waiver with signature and snapshot data
+      // Update existing unsigned waiver with signature and snapshot data
       waiverId = existingWaivers[0].id;
       await db.query(
         `UPDATE waivers 
@@ -715,7 +723,7 @@ const saveSignature = async (req, res) => {
             signer_dob = ?, minors_snapshot = ?
         WHERE id = ?`,
         [
-          signature, 
+          signature,
           snapshotData.signer_name,
           snapshotData.signer_email,
           snapshotData.signer_address,
@@ -727,31 +735,45 @@ const saveSignature = async (req, res) => {
           waiverId
         ],
       );
-      console.log(`✅ Updated waiver ${waiverId} with signature and snapshot for user ${id}`);
+      console.log(`✅ Updated existing unsigned waiver ${waiverId} with signature and snapshot for user ${id}`);
     } else {
-      // Fallback: Create new waiver if none exists (shouldn't happen in normal flow)
-      const [result] = await db.query(
-        `INSERT INTO waivers 
-        (user_id, signature_image, signed_at, completed, 
-         signer_name, signer_email, signer_address, 
-         signer_city, signer_province, signer_postal, 
-         signer_dob, minors_snapshot) 
-        VALUES (?, ?, NOW(), 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          id, 
-          signature,
-          snapshotData.signer_name,
-          snapshotData.signer_email,
-          snapshotData.signer_address,
-          snapshotData.signer_city,
-          snapshotData.signer_province,
-          snapshotData.signer_postal,
-          snapshotData.signer_dob,
-          snapshotData.minors_snapshot
-        ],
+      // No unsigned waiver found - check if user has any signed waivers (repeat visit)
+      const [signedWaivers] = await db.query(
+        "SELECT id FROM waivers WHERE user_id = ? AND signed_at IS NOT NULL ORDER BY created_at DESC LIMIT 1",
+        [id],
       );
-      waiverId = result.insertId;
-      console.log(`✅ Created new waiver ${waiverId} with signature and snapshot for user ${id}`);
+
+      if (signedWaivers.length > 0) {
+        // User has a previous signed waiver - create new one for repeat visit
+        const [result] = await db.query(
+          `INSERT INTO waivers 
+          (user_id, signature_image, signed_at, completed, 
+           signer_name, signer_email, signer_address, 
+           signer_city, signer_province, signer_postal, 
+           signer_dob, minors_snapshot) 
+          VALUES (?, ?, NOW(), 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            id, 
+            signature,
+            snapshotData.signer_name,
+            snapshotData.signer_email,
+            snapshotData.signer_address,
+            snapshotData.signer_city,
+            snapshotData.signer_province,
+            snapshotData.signer_postal,
+            snapshotData.signer_dob,
+            snapshotData.minors_snapshot
+          ],
+        );
+        waiverId = result.insertId;
+        console.log(`✅ Created new waiver ${waiverId} for repeat visit by user ${id}`);
+      } else {
+        // This should not happen in normal flow, but handle it
+        console.error(`⚠️ No waiver found for user ${id} - this should not happen`);
+        return res.status(500).json({
+          error: "No waiver found to sign. Please start the process again.",
+        });
+      }
     }
 
     console.log(`✅ Signature and snapshot saved for waiver ${waiverId}`);

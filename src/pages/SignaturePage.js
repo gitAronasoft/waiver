@@ -73,9 +73,10 @@ function Signature() {
       fullName: `${data.first_name} ${data.last_name}`,
     }));
 
-    // Only pre-fill signature when viewing a specific waiver OR when NOT creating a new waiver
-    // For new waiver flow (createNewWaiver=true), don't pre-fill signature
-    const shouldPreFillSignature = waiverId || (viewMode && !createNewWaiver);
+    // Only pre-fill signature for existing customers viewing/updating their waiver
+    // Skip for new customers - they don't have a signature yet
+    const isNewCustomer = customerType === "new";
+    const shouldPreFillSignature = !isNewCustomer && (waiverId || (viewMode && !createNewWaiver));
     
     if (shouldPreFillSignature && (waiverId || customerId)) {
       const loadSignature = async () => {
@@ -107,6 +108,8 @@ function Signature() {
       };
       
       loadSignature();
+    } else if (isNewCustomer) {
+      console.log("New customer flow - skipping signature fetch");
     }
     
     setLoading(false);
@@ -123,7 +126,7 @@ function Signature() {
 
   const handleMinorChange = (index, field, value) => {
     const minors = [...reduxMinors];
-    minors[index][field] = value;
+    minors[index] = { ...minors[index], [field]: value };
     dispatch(setMinors(minors));
     
     // Clear error for this field when user types
@@ -648,33 +651,26 @@ AND ADMINISTRATORS MAY HAVE AGAINST SKATE & PLAY INC. </p>
                       >
                         Remove
                       </button>
-                    ) : null}
+                    ) : <button
+                      type="button"
+                      className="btn btn-primary no-print"
+                      onClick={handleAddMinor}
+                      style={{
+                        backgroundColor: '#007bff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '10px 40px',
+                        fontSize: '15px',
+                        fontWeight: '500',
+                        minWidth: '200px',
+                      }}
+                    >
+                      Add another minor
+                    </button>}
                   </div>
                 </div>
               </div>
             ))}
-            
-            
-
-            {/* Add Another Minor Button */}
-            <div className="text-center mt-4 mb-3 no-print">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleAddMinor}
-                style={{
-                  backgroundColor: '#007bff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px 40px',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  minWidth: '200px',
-                }}
-              >
-                Add another minor
-              </button>
-            </div>
 
             <div className="confirm-box mt-4 mb-4 no-print">
               <label className="d-flex align-items-start gap-2">

@@ -18,6 +18,8 @@ function ConfirmCustomerInfo() {
   const [originalData, setOriginalData] = useState(null);
   const [originalMinors, setOriginalMinors] = useState([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showMinorCheckDialog, setShowMinorCheckDialog] = useState(false);
+  const [pendingMinorChange, setPendingMinorChange] = useState(null);
 
   // Route protection: Redirect if accessed directly without valid state
   useEffect(() => {
@@ -323,6 +325,30 @@ function ConfirmCustomerInfo() {
     dispatch(setCurrentStep('SIGNATURE'));
     navigate("/sign-waiver", { replace: true });
   };
+
+  const handleMinorCheckChange = (index, checked) => {
+    // Store the pending change
+    setPendingMinorChange({ index, checked });
+    setShowMinorCheckDialog(true);
+  };
+
+  const confirmMinorCheck = () => {
+    if (pendingMinorChange) {
+      const updated = [...minorList];
+      updated[pendingMinorChange.index].checked = pendingMinorChange.checked;
+      setMinorList(updated);
+      // Update Redux immediately so signature page reflects changes
+      dispatch(setMinors(updated));
+    }
+    setShowMinorCheckDialog(false);
+    setPendingMinorChange(null);
+  };
+
+  const cancelMinorCheck = () => {
+    setShowMinorCheckDialog(false);
+    setPendingMinorChange(null);
+  };
+
   if (loading || !formData) {
     return <div className="text-center mt-5">Loading customer info...</div>;
   }
@@ -534,13 +560,7 @@ function ConfirmCustomerInfo() {
                       <input
                         type="checkbox"
                         checked={minor.checked}
-                        onChange={(e) => {
-                          const updated = [...minorList];
-                          updated[index].checked = e.target.checked;
-                          setMinorList(updated);
-                          // Update Redux immediately so signature page reflects changes
-                          dispatch(setMinors(updated));
-                        }}
+                        onChange={(e) => handleMinorCheckChange(index, e.target.checked)}
                         class="custom-checkbox"
                       />
                     </div>
@@ -784,6 +804,79 @@ function ConfirmCustomerInfo() {
                 }}
               >
                 {updating ? "Processing..." : "Yes, Continue"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog for Minor Check/Uncheck */}
+      {showMinorCheckDialog && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+          onClick={cancelMinorCheck}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              maxWidth: "450px",
+              width: "90%",
+              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4 style={{ marginBottom: "20px", color: "#333", fontWeight: "600" }}>
+              Update Minor Selection?
+            </h4>
+            <p style={{ marginBottom: "25px", color: "#666", lineHeight: "1.6" }}>
+              Are you sure you want to {pendingMinorChange?.checked ? 'include' : 'exclude'} this minor in your waiver?
+              This change will be saved when you sign the waiver.
+            </p>
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={cancelMinorCheck}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: "8px",
+                  border: "1px solid #ddd",
+                  backgroundColor: "white",
+                  color: "#666",
+                  fontSize: "15px",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmMinorCheck}
+                style={{
+                  padding: "10px 24px",
+                  borderRadius: "8px",
+                  border: "none",
+                  backgroundColor: "#007bff",
+                  color: "white",
+                  fontSize: "15px",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                }}
+              >
+                Yes, Update
               </button>
             </div>
           </div>

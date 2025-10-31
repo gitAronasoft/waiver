@@ -223,7 +223,7 @@ function NewCustomerForm() {
       ...formData,
       cell_phone: cleanPhone,
       cc_cell_phone: phoneWithCode,
-      minors: minorList,
+      minors: minorList.map(m => ({ ...m, checked: true })),
       send_otp: isChecked,
     };
 

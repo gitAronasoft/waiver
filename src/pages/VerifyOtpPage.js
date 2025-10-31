@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { toast } from 'react-toastify';
 import { BACKEND_URL } from '../config';
-import { setCurrentStep, setCustomerId, setWaiverId, setViewMode } from "../store/slices/waiverSessionSlice";
+import { setCurrentStep, setCustomerId, setWaiverId, setViewMode, setCustomerData, setMinors } from "../store/slices/waiverSessionSlice";
 
 function VerifyOtp() {
   const [otp, setOtp] = useState("");
@@ -66,7 +66,7 @@ const verifyOtp = async (otpValue) => {
     if (res.data.authenticated) {
       toast.success("Phone number verified successfully!");
       
-      // Set customerId in Redux for existing customers to fix Rules page redirect
+      // Set customerId in Redux
       if (res.data.userId) {
         dispatch(setCustomerId(res.data.userId));
         console.log("Set customerId in Redux:", res.data.userId);
@@ -87,6 +87,8 @@ const verifyOtp = async (otpValue) => {
         dispatch(setCurrentStep('CONFIRM_INFO'));
         navigate("/review-information", { replace: true });
       } else if (flowType === "new") {
+        // New customers already have data in Redux from NewCustomerForm
+        // No need to fetch - just navigate to signature page
         dispatch(setCurrentStep('SIGNATURE'));
         navigate("/sign-waiver", { replace: true });
       }

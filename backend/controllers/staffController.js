@@ -737,6 +737,9 @@ const updateStaff = async (req, res) => {
  * Updates staff member's own profile (name, email, and profile image)
  */
 const updateProfile = async (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  
   try {
     const { id, name, email } = req.body;
 
@@ -766,6 +769,18 @@ const updateProfile = async (req, res) => {
       });
     }
 
+    // Get current profile image before update (to delete it later)
+    let oldProfileImage = null;
+    if (req.file) {
+      const [currentStaff] = await db.query(
+        'SELECT profile_image FROM staff WHERE id = ?',
+        [id]
+      );
+      if (currentStaff.length > 0) {
+        oldProfileImage = currentStaff[0].profile_image;
+      }
+    }
+
     // Build update query dynamically based on whether image was uploaded
     let query = 'UPDATE staff SET name = ?, email = ?';
     const params = [name, email];
@@ -785,6 +800,18 @@ const updateProfile = async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ 
         error: 'Staff member not found' 
+      });
+    }
+
+    // Delete old profile image from server if new image was uploaded
+    if (req.file && oldProfileImage) {
+      const oldImagePath = path.join(__dirname, '../../public', oldProfileImage);
+      fs.unlink(oldImagePath, (err) => {
+        if (err) {
+          console.log('Could not delete old profile image:', err.message);
+        } else {
+          console.log('✅ Old profile image deleted:', oldProfileImage);
+        }
       });
     }
 

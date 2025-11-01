@@ -180,7 +180,35 @@ const getRatingInfo = async (req, res) => {
  */
 const getAllFeedback = async (req, res) => {
   try {
-    const [feedback] = await db.query(`
+    // Get pagination and search parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const offset = (page - 1) * limit;
+
+    // Build WHERE clause for search
+    let whereClause = '';
+    const queryParams = [];
+    
+    if (search.trim() !== '') {
+      whereClause = `WHERE (c.first_name LIKE ? OR c.last_name LIKE ? OR c.email LIKE ? 
+                     OR c.cell_phone LIKE ? OR f.staff_name LIKE ? OR f.message LIKE ? OR f.issue LIKE ?)`;
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM feedback f
+      JOIN users c ON f.user_id = c.id
+      LEFT JOIN waivers w ON f.waiver_id = w.id
+      ${whereClause}
+    `;
+    const [[{ total }]] = await db.query(countQuery, queryParams);
+
+    // Get paginated data
+    const dataQuery = `
       SELECT 
         f.id,
         f.user_id,
@@ -198,10 +226,21 @@ const getAllFeedback = async (req, res) => {
       FROM feedback f
       JOIN users c ON f.user_id = c.id
       LEFT JOIN waivers w ON f.waiver_id = w.id
+      ${whereClause}
       ORDER BY f.created_at DESC
-    `);
+      LIMIT ? OFFSET ?
+    `;
+    const [feedback] = await db.query(dataQuery, [...queryParams, limit, offset]);
 
-    res.json(feedback);
+    res.json({
+      data: feedback,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     const errorId = `ERR_${Date.now()}`;
     console.error(`[${errorId}] Error fetching feedback:`, {

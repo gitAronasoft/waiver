@@ -506,7 +506,7 @@ function ConfirmCustomerInfo() {
                 {minorList.map((minor, index) => (
                   <div
                     key={index}
-                    className="d-flex align-items-start gap-3 mb-3"
+                    className="d-flex align-items-start gap-3 mb-3 minor-form-enter"
                     style={{ width: "100%" }}
                   >
                     <div style={{ paddingTop: "8px" }}>

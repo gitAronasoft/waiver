@@ -14,8 +14,9 @@ const LazyImage = ({
 
   useEffect(() => {
     let observer;
+    const currentImg = imgRef.current;
     
-    if (imgRef.current && 'IntersectionObserver' in window) {
+    if (currentImg && 'IntersectionObserver' in window) {
       observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -29,8 +30,8 @@ const LazyImage = ({
               img.onerror = () => {
                 setImageLoaded(true);
               };
-              if (observer && imgRef.current) {
-                observer.unobserve(imgRef.current);
+              if (observer && currentImg) {
+                observer.unobserve(currentImg);
               }
             }
           });
@@ -40,15 +41,15 @@ const LazyImage = ({
         }
       );
 
-      observer.observe(imgRef.current);
+      observer.observe(currentImg);
     } else {
       setImageSrc(src);
       setImageLoaded(true);
     }
 
     return () => {
-      if (observer && imgRef.current) {
-        observer.unobserve(imgRef.current);
+      if (observer && currentImg) {
+        observer.unobserve(currentImg);
       }
     };
   }, [src]);

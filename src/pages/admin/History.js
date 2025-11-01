@@ -10,8 +10,8 @@ import DataTable from 'react-data-table-component';
 import { BACKEND_URL } from '../../config';
 
 function HistoryPage() {
-  const [waivers, setWaivers] = useState([]);
-  const [filtered, setFiltered] = useState([]);
+  const [data, setData] = useState([]);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 0 });
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -29,45 +29,43 @@ function HistoryPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch waivers
-  useEffect(() => {
+  // Fetch waivers with server-side pagination
+  const fetchWaivers = (page = 1, limit = 10, searchQuery = "", statusFilter = 'All') => {
     setLoading(true);
-    axios.get(`${BACKEND_URL}/api/waivers/getallwaivers`)
+    
+    let status = '';
+    if (statusFilter === 'Confirmed') status = '1';
+    else if (statusFilter === 'Unconfirmed') status = '0';
+    else if (statusFilter === 'Inaccurate') status = '2';
+    
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(searchQuery && { search: searchQuery }),
+      ...(status && { status })
+    });
+
+    axios.get(`${BACKEND_URL}/api/waivers/getallwaivers?${params}`)
       .then(res => {
-        setWaivers(res.data);
-        setFiltered(res.data);
+        setData(res.data.data || res.data);
+        setPagination(res.data.pagination || { total: res.data.length, page: 1, limit: 10, totalPages: 1 });
       })
       .catch(err => {
         console.error("Error fetching waivers:", err);
         toast.error("Failed to load waivers.");
       })
       .finally(() => setLoading(false));
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchWaivers(pagination.page, pagination.limit, search, filter);
   }, []);
 
-  // Filter & search
+  // Refetch when filter or search changes
   useEffect(() => {
-    let data = [...waivers];
-
-    if (filter !== 'All') {
-      data = data.filter(w => {
-        if (filter === 'Confirmed') return w.status === 1;
-        if (filter === 'Unconfirmed') return w.status === 0;
-        if (filter === 'Inaccurate') return w.status === 2;
-        return true;
-      });
-    }
-
-    if (search.trim() !== "") {
-      const lowerSearch = search.toLowerCase();
-      data = data.filter(w => {
-        const fullName = `${w.first_name} ${w.last_name}`.toLowerCase();
-        const minorNames = (w.minors || []).map(m => `${m.first_name} ${m.last_name}`.toLowerCase());
-        return fullName.includes(lowerSearch) || minorNames.some(name => name.includes(lowerSearch));
-      });
-    }
-
-    setFiltered(data);
-  }, [filter, search, waivers]);
+    fetchWaivers(1, pagination.limit, search, filter);
+  }, [filter, search]);
 
   const openModal = (entry, type) => {
     setSelectedEntry(entry);
@@ -87,14 +85,14 @@ function HistoryPage() {
       if (modalType === "delete") {
         await axios.delete(`${BACKEND_URL}/api/waivers/${selectedEntry.waiver_id}`);
         toast.success("Waiver deleted successfully.");
-        setWaivers(prev => prev.filter(w => w.waiver_id !== selectedEntry.waiver_id));
+        // Refetch current page after delete
+        fetchWaivers(pagination.page, pagination.limit, search, filter);
       } else if (modalType === "status") {
         const newStatus = selectedEntry.status === 1 ? 0 : 1;
         await axios.put(`${BACKEND_URL}/api/waivers/${selectedEntry.waiver_id}/status`, { status: newStatus });
         toast.success(`Waiver marked as ${newStatus === 1 ? 'Confirmed' : 'Unconfirmed'}.`);
-        setWaivers(prev =>
-          prev.map(w => w.waiver_id === selectedEntry.waiver_id ? { ...w, status: newStatus } : w)
-        );
+        // Refetch current page after status change
+        fetchWaivers(pagination.page, pagination.limit, search, filter);
       }
     } catch (err) {
       console.error(err);
@@ -102,6 +100,16 @@ function HistoryPage() {
     } finally {
       closeModal();
     }
+  };
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    fetchWaivers(page, pagination.limit, search, filter);
+  };
+
+  // Handle rows per page change
+  const handlePerRowsChange = (newPerPage, page) => {
+    fetchWaivers(page, newPerPage, search, filter);
   };
 
   // Desktop columns
@@ -443,11 +451,17 @@ const ExpandedComponent = ({ data }) => (
             {loading ? (
               <Skeleton height={50} count={5} />
             ) : (
-              <div class="history-table">
+              <div className="history-table">
               <DataTable
                 columns={isMobile ? mobileColumns : desktopColumns}
-                data={filtered}
+                data={data}
                 pagination
+                paginationServer
+                paginationTotalRows={pagination.total}
+                paginationDefaultPage={pagination.page}
+                paginationPerPage={pagination.limit}
+                onChangePage={handlePageChange}
+                onChangeRowsPerPage={handlePerRowsChange}
                 responsive
                 highlightOnHover
                 noHeader

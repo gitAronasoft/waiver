@@ -5,11 +5,12 @@ import { convertToEST } from "../../utils/time";
 import DataTable from 'react-data-table-component';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { toast } from "react-toastify";
 import { BACKEND_URL } from '../../config';
 
 const AdminFeedbackPage = () => {
-  const [feedbackList, setFeedbackList] = useState([]);
-  const [filtered, setFiltered] = useState([]);
+  const [data, setData] = useState([]);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 0 });
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -20,47 +21,47 @@ const AdminFeedbackPage = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await axios.get(
-          `${BACKEND_URL}/api/feedback/list`
-        );
-        const sorted = data.sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at)
-        );
-        setFeedbackList(sorted);
-        setFiltered(sorted);
-      } catch (err) {
+  // Fetch feedback with server-side pagination
+  const fetchFeedback = (page = 1, limit = 10, searchQuery = "") => {
+    setLoading(true);
+    
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(searchQuery && { search: searchQuery })
+    });
+
+    axios.get(`${BACKEND_URL}/api/feedback/list?${params}`)
+      .then(res => {
+        setData(res.data.data || res.data);
+        setPagination(res.data.pagination || { total: res.data.length, page: 1, limit: 10, totalPages: 1 });
+      })
+      .catch(err => {
         console.error("Failed to fetch feedback", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
+        toast.error("Failed to load feedback.");
+      })
+      .finally(() => setLoading(false));
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchFeedback(pagination.page, pagination.limit, search);
   }, []);
 
+  // Refetch when search changes
   useEffect(() => {
-    if (search.trim() === "") {
-      setFiltered(feedbackList);
-    } else {
-      const lowerSearch = search.toLowerCase();
-      const filtered = feedbackList.filter(f => {
-        const fullName = `${f.first_name || ""} ${f.last_name || ""}`.toLowerCase();
-        const email = (f.email || "").toLowerCase();
-        const phone = (f.cell_phone || "").toLowerCase();
-        const staffName = (f.staff_name || "").toLowerCase();
-        const message = (f.message || "").toLowerCase();
-        const issue = (f.issue || "").toLowerCase();
-        return fullName.includes(lowerSearch) || 
-               email.includes(lowerSearch) ||
-               phone.includes(lowerSearch) ||
-               staffName.includes(lowerSearch) || 
-               message.includes(lowerSearch) ||
-               issue.includes(lowerSearch);
-      });
-      setFiltered(filtered);
-    }
-  }, [search, feedbackList]);
+    fetchFeedback(1, pagination.limit, search);
+  }, [search]);
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    fetchFeedback(page, pagination.limit, search);
+  };
+
+  // Handle rows per page change
+  const handlePerRowsChange = (newPerPage, page) => {
+    fetchFeedback(page, newPerPage, search);
+  };
 
   const desktopColumns = [
     { name: "#", cell: (row, index) => index + 1, width: "60px", sortable: true },
@@ -209,8 +210,14 @@ const AdminFeedbackPage = () => {
               <div className="history-table">
                 <DataTable
                   columns={isMobile ? mobileColumns : desktopColumns}
-                  data={filtered}
+                  data={data}
                   pagination
+                  paginationServer
+                  paginationTotalRows={pagination.total}
+                  paginationDefaultPage={pagination.page}
+                  paginationPerPage={pagination.limit}
+                  onChangePage={handlePageChange}
+                  onChangeRowsPerPage={handlePerRowsChange}
                   responsive
                   highlightOnHover
                   noHeader

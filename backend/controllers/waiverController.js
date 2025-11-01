@@ -917,8 +917,33 @@ const getUserHistory = async (req, res) => {
 const getAllWaivers = async (req, res) => {
   try {
     const { convertToEST } = require("../utils/time");
+    
+    // Get pagination and search parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+    const offset = (page - 1) * limit;
 
-    const [rows] = await db.query(`
+    // Build WHERE clause for search
+    let whereClause = 'WHERE w.signed_at IS NOT NULL';
+    const queryParams = [];
+    
+    if (search.trim() !== '') {
+      whereClause += ' AND (w.signer_name LIKE ? OR w.signer_email LIKE ? OR w.minors_snapshot LIKE ?)';
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM waivers w
+      ${whereClause}
+    `;
+    const [[{ total }]] = await db.query(countQuery, queryParams);
+
+    // Get paginated data
+    const dataQuery = `
       SELECT 
         w.user_id,
         w.signer_name,
@@ -930,9 +955,11 @@ const getAllWaivers = async (req, res) => {
         w.verified_by_staff AS status,
         w.minors_snapshot
       FROM waivers w
-      WHERE w.signed_at IS NOT NULL
+      ${whereClause}
       ORDER BY w.signed_at DESC
-    `);
+      LIMIT ? OFFSET ?
+    `;
+    const [rows] = await db.query(dataQuery, [...queryParams, limit, offset]);
 
     // Parse minors from snapshot JSON and format signed_at using backend timezone conversion
     const waivers = rows.map(r => {
@@ -969,7 +996,15 @@ const getAllWaivers = async (req, res) => {
       };
     });
 
-    res.json(waivers);
+    res.json({
+      data: waivers,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     const errorId = `ERR_${Date.now()}`;
     console.error(`[${errorId}] Error fetching all waivers:`, {

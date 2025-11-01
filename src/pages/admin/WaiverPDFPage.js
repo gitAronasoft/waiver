@@ -10,6 +10,7 @@ function WaiverPDFPage() {
   const { id } = useParams();
   const [customer, setCustomer] = useState(null);
   const [minors, setMinors] = useState([]);
+  const [downloading, setDownloading] = useState(false);
   const pdfRef = useRef();
 
   useEffect(() => {
@@ -23,17 +24,24 @@ function WaiverPDFPage() {
   }, [id]);
 
   const handleDownloadPDF = async () => {
-    const element = pdfRef.current;
-    
-    // Reduce scale from 2 to 0.8 for optimal file size
-    const canvas = await html2canvas(element, {
-      scale: 0.8,
-      useCORS: true,
-      scrollY: -window.scrollY,
-    });
+    setDownloading(true);
+    try {
+      const element = pdfRef.current;
+      
+      // Reduce scale from 0.8 to 0.6 for optimal file size
+      const canvas = await html2canvas(element, {
+        scale: 0.6,
+        useCORS: true,
+        scrollY: -window.scrollY,
+      });
 
-    const pdf = new jsPDF("p", "mm", "a4");
-    const margin = 10;
+      const pdf = new jsPDF({
+        orientation: "p",
+        unit: "mm",
+        format: "a4",
+        compress: true
+      });
+      const margin = 10;
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const usableWidth = pageWidth - margin * 2;
@@ -63,8 +71,8 @@ function WaiverPDFPage() {
         pageCanvas.height
       );
 
-      // Convert to JPEG with 70% quality (much smaller than PNG)
-      const pageData = pageCanvas.toDataURL("image/jpeg", 0.7);
+      // Convert to JPEG with 50% quality for smaller file size (reduced from 70%)
+      const pageData = pageCanvas.toDataURL("image/jpeg", 0.5);
 
       if (pageIndex > 0) pdf.addPage();
       pdf.addImage(
@@ -81,6 +89,9 @@ function WaiverPDFPage() {
     }
 
     pdf.save(`waiver-${id}.pdf`);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (!customer) return <div className="text-center mt-5">Loading...</div>;
@@ -88,8 +99,19 @@ function WaiverPDFPage() {
   return (
     <div className="container-fluid">
       <div className="text-end p-3">
-        <button className="btn btn-success" onClick={handleDownloadPDF}>
-          Download PDF
+        <button 
+          className="btn btn-success" 
+          onClick={handleDownloadPDF}
+          disabled={downloading}
+        >
+          {downloading ? (
+            <>
+              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Generating PDF...
+            </>
+          ) : (
+            'Download PDF'
+          )}
         </button>
       </div>
 

@@ -29,6 +29,22 @@ function AdminProfile() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // Validate file size (500KB = 512000 bytes)
+      const maxSize = 500 * 1024; // 500KB in bytes
+      if (file.size > maxSize) {
+        toast.error(`Image size must be less than 500KB. Your image is ${(file.size / 1024).toFixed(0)}KB.`);
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Only JPG, PNG, and GIF images are allowed');
+        e.target.value = ''; // Clear the input
+        return;
+      }
+      
       setPreview(URL.createObjectURL(file));
       setAdmin({ ...admin, profileImage: file });
     }
@@ -101,10 +117,35 @@ function AdminProfile() {
 
         setPreview(null);
       } else {
+        // Keep previous image if upload fails
         toast.error(data.error || "Failed to update profile");
+        if (admin.profileImage instanceof File) {
+          // Revert to previous profile image
+          setAdmin({
+            ...admin,
+            profileImage: staff.profile_image
+          });
+          setPreview(null);
+        }
       }
     } catch (err) {
-      toast.error(err.response?.data?.error || "Failed to update profile");
+      const errorMessage = err.message || "Failed to update profile";
+      
+      // Check for file size error
+      if (errorMessage.includes('File too large') || errorMessage.includes('LIMIT_FILE_SIZE')) {
+        toast.error('Image size must be less than 500KB. Please choose a smaller image.');
+      } else {
+        toast.error(errorMessage);
+      }
+      
+      // Keep previous image if upload fails
+      if (admin.profileImage instanceof File) {
+        setAdmin({
+          ...admin,
+          profileImage: staff.profile_image
+        });
+        setPreview(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -174,6 +215,9 @@ function AdminProfile() {
                     className="form-control"
                     disabled={loading}
                   />
+                  <small className="text-muted d-block mt-1">
+                    Maximum file size: 500KB. Accepted formats: JPG, PNG, GIF
+                  </small>
                 </div>
 
                 {/* Submit */}

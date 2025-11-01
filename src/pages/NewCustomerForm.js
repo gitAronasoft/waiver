@@ -604,9 +604,9 @@ function NewCustomerForm() {
               </div>
 
               {formData.signing_for_minor && (
-                <>
+                <div className="minor-form-container minor-form-enter">
                   {minorList.map((minor, index) => (
-                    <div key={index} className="mb-3">
+                    <div key={index} className="mb-3 minor-form-enter">
                       <div className="row g-2 align-items-start">
                         <div className="col-12 col-md-3">
                           <input
@@ -719,7 +719,7 @@ function NewCustomerForm() {
                       Add another minor
                     </button>
                   </div>
-                </>
+                </div>
               )}
 
               <div className="my-4">

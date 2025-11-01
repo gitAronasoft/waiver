@@ -180,10 +180,12 @@ const getRatingInfo = async (req, res) => {
  */
 const getAllFeedback = async (req, res) => {
   try {
-    // Get pagination and search parameters
+    // Get pagination, search, and sort parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
+    const sortBy = req.query.sortBy || 'created_at';
+    const sortOrder = req.query.sortOrder || 'DESC';
     const offset = (page - 1) * limit;
 
     // Build WHERE clause for search
@@ -197,6 +199,17 @@ const getAllFeedback = async (req, res) => {
       queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
     }
 
+    // Validate and map sortBy to actual column names
+    const sortColumnMap = {
+      'email': 'c.email',
+      'cell_phone': 'c.cell_phone',
+      'waiver_id': 'f.waiver_id',
+      'rating': 'f.rating',
+      'created_at': 'f.created_at'
+    };
+    const sortColumn = sortColumnMap[sortBy] || 'f.created_at';
+    const order = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
     // Get total count for pagination
     const countQuery = `
       SELECT COUNT(*) as total
@@ -207,7 +220,7 @@ const getAllFeedback = async (req, res) => {
     `;
     const [[{ total }]] = await db.query(countQuery, queryParams);
 
-    // Get paginated data
+    // Get paginated data with sorting
     const dataQuery = `
       SELECT 
         f.id,
@@ -227,7 +240,7 @@ const getAllFeedback = async (req, res) => {
       JOIN users c ON f.user_id = c.id
       LEFT JOIN waivers w ON f.waiver_id = w.id
       ${whereClause}
-      ORDER BY f.created_at DESC
+      ORDER BY ${sortColumn} ${order}
       LIMIT ? OFFSET ?
     `;
     const [feedback] = await db.query(dataQuery, [...queryParams, limit, offset]);

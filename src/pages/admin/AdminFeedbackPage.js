@@ -16,6 +16,8 @@ const AdminFeedbackPage = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('DESC');
   const isInitialMount = useRef(true);
 
   useEffect(() => {
@@ -24,13 +26,15 @@ const AdminFeedbackPage = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch feedback with server-side pagination
-  const fetchFeedback = (page = 1, limit = 20, searchQuery = "") => {
+  // Fetch feedback with server-side pagination and sorting
+  const fetchFeedback = (page = 1, limit = 20, searchQuery = "", sort = sortBy, order = sortOrder) => {
     setLoading(true);
     
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
+      sortBy: sort,
+      sortOrder: order,
       ...(searchQuery && { search: searchQuery })
     });
 
@@ -44,6 +48,14 @@ const AdminFeedbackPage = () => {
         toast.error("Failed to load feedback.");
       })
       .finally(() => setLoading(false));
+  };
+
+  // Handle column sort
+  const handleSort = (column) => {
+    const newSortOrder = sortBy === column && sortOrder === 'ASC' ? 'DESC' : 'ASC';
+    setSortBy(column);
+    setSortOrder(newSortOrder);
+    fetchFeedback(currentPage, rowsPerPage, search, column, newSortOrder);
   };
 
   // Initial fetch
@@ -79,11 +91,10 @@ const AdminFeedbackPage = () => {
   };
 
   const desktopColumns = [
-    { name: "#", cell: (row, index) => index + 1, width: "60px", sortable: true },
+    { name: "#", cell: (row, index) => index + 1, width: "60px" },
     {
       name: "Customer",
       selector: row => `${row.first_name || ""} ${row.last_name || ""}`,
-      sortable: true,
       cell: row => (
         <span title={`${row.first_name || ""} ${row.last_name || ""}`}>
           {row.first_name || ""} {row.last_name || ""}
@@ -91,31 +102,55 @@ const AdminFeedbackPage = () => {
       )
     },
     {
-      name: "Email",
+      name: (
+        <div 
+          onClick={() => handleSort('email')} 
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          Email {sortBy === 'email' && (sortOrder === 'ASC' ? '↑' : '↓')}
+        </div>
+      ),
       selector: row => row.email || "-",
-      sortable: true,
       cell: row => <span title={row.email || "-"}>{row.email || "-"}</span>,
       wrap: true,
-      minWidth: "180px"
+      minWidth: "200px"
     },
     {
-      name: "Phone",
+      name: (
+        <div 
+          onClick={() => handleSort('cell_phone')} 
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          Phone {sortBy === 'cell_phone' && (sortOrder === 'ASC' ? '↑' : '↓')}
+        </div>
+      ),
       selector: row => row.cell_phone || "-",
-      sortable: true,
       cell: row => <span title={row.cell_phone || "-"}>{row.cell_phone || "-"}</span>,
-      width: "130px"
+      width: "150px"
     },
     {
-      name: "Waiver ID",
+      name: (
+        <div 
+          onClick={() => handleSort('waiver_id')} 
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          Waiver ID {sortBy === 'waiver_id' && (sortOrder === 'ASC' ? '↑' : '↓')}
+        </div>
+      ),
       selector: row => row.waiver_id || "-",
-      sortable: true,
-      width: "100px"
+      width: "120px"
     },
     {
-      name: "Rating",
+      name: (
+        <div 
+          onClick={() => handleSort('rating')} 
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          Rating {sortBy === 'rating' && (sortOrder === 'ASC' ? '↑' : '↓')}
+        </div>
+      ),
       selector: row => row.rating || "-",
-      sortable: true,
-      width: "100px"
+      width: "110px"
     },
     {
       name: "Visit Date",

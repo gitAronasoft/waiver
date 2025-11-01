@@ -600,7 +600,7 @@ const getAllCustomers = async (req, res) => {
   try {
     // Fetch waivers with snapshot data (no joins with users/minors tables)
     // Filter out verified waivers (only show waivers that need verification)
-    // Show waivers that have been signed (have signature_image) instead of waiting for rules acceptance
+    // Show only waivers signed TODAY (based on server timezone)
     const [waivers] = await db.query(`
       SELECT 
         w.user_id as id,
@@ -619,7 +619,9 @@ const getAllCustomers = async (req, res) => {
         w.completed,
         w.minors_snapshot
       FROM waivers w
-      WHERE w.signature_image IS NOT NULL AND (w.verified_by_staff IS NULL OR w.verified_by_staff = 0)
+      WHERE w.signature_image IS NOT NULL 
+        AND (w.verified_by_staff IS NULL OR w.verified_by_staff = 0)
+        AND DATE(w.signed_at) = CURDATE()
       ORDER BY w.created_at DESC
     `);
 
@@ -918,21 +920,49 @@ const getAllWaivers = async (req, res) => {
   try {
     const { convertToEST } = require("../utils/time");
     
-    // Get pagination and search parameters
+    // Get pagination, search, filter, and sort parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const search = req.query.search || '';
+    const status = req.query.status || '';
+    const sortBy = req.query.sortBy || 'signed_at';
+    const sortOrder = req.query.sortOrder || 'DESC';
     const offset = (page - 1) * limit;
 
-    // Build WHERE clause for search
+    // Build WHERE clause for search and filter
     let whereClause = 'WHERE w.signed_at IS NOT NULL';
     const queryParams = [];
     
+    // Add status filter
+    if (status) {
+      if (status.includes(',')) {
+        // Multiple statuses (e.g., '0,2' for Inaccurate & Unconfirmed)
+        const statuses = status.split(',').map(s => s.trim());
+        const placeholders = statuses.map(() => '?').join(',');
+        whereClause += ` AND w.verified_by_staff IN (${placeholders})`;
+        queryParams.push(...statuses);
+      } else {
+        // Single status
+        whereClause += ' AND w.verified_by_staff = ?';
+        queryParams.push(status);
+      }
+    }
+    
+    // Add search filter
     if (search.trim() !== '') {
       whereClause += ' AND (w.signer_name LIKE ? OR w.signer_email LIKE ? OR w.minors_snapshot LIKE ?)';
       const searchTerm = `%${search}%`;
       queryParams.push(searchTerm, searchTerm, searchTerm);
     }
+
+    // Validate and map sortBy to actual column names
+    const sortColumnMap = {
+      'waiver_id': 'w.id',
+      'signer_name': 'w.signer_name',
+      'signed_at': 'w.signed_at'
+    };
+    const sortColumn = sortColumnMap[sortBy] || 'w.signed_at';
+    const order = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     // Get total count for pagination
     const countQuery = `
@@ -942,7 +972,7 @@ const getAllWaivers = async (req, res) => {
     `;
     const [[{ total }]] = await db.query(countQuery, queryParams);
 
-    // Get paginated data
+    // Get paginated data with sorting
     const dataQuery = `
       SELECT 
         w.user_id,
@@ -956,7 +986,7 @@ const getAllWaivers = async (req, res) => {
         w.minors_snapshot
       FROM waivers w
       ${whereClause}
-      ORDER BY w.signed_at DESC
+      ORDER BY ${sortColumn} ${order}
       LIMIT ? OFFSET ?
     `;
     const [rows] = await db.query(dataQuery, [...queryParams, limit, offset]);

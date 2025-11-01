@@ -21,6 +21,8 @@ function HistoryPage() {
   const [modalType, setModalType] = useState("");
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [sortBy, setSortBy] = useState('signed_at');
+  const [sortOrder, setSortOrder] = useState('DESC');
   const isInitialMount = useRef(true);
 
   const navigate = useNavigate();
@@ -32,18 +34,20 @@ function HistoryPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch waivers with server-side pagination
-  const fetchWaivers = (page = 1, limit = 20, searchQuery = "", statusFilter = 'All') => {
+  // Fetch waivers with server-side pagination, filtering, and sorting
+  const fetchWaivers = (page = 1, limit = 20, searchQuery = "", statusFilter = 'All', sort = sortBy, order = sortOrder) => {
     setLoading(true);
     
     let status = '';
-    if (statusFilter === 'Confirmed') status = '1';
+    if (statusFilter === 'Completed') status = '1';
     else if (statusFilter === 'Unconfirmed') status = '0';
     else if (statusFilter === 'Inaccurate') status = '2';
     
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
+      sortBy: sort,
+      sortOrder: order,
       ...(searchQuery && { search: searchQuery }),
       ...(status && { status })
     });
@@ -58,6 +62,14 @@ function HistoryPage() {
         toast.error("Failed to load waivers.");
       })
       .finally(() => setLoading(false));
+  };
+
+  // Handle column sort
+  const handleSort = (column) => {
+    const newSortOrder = sortBy === column && sortOrder === 'ASC' ? 'DESC' : 'ASC';
+    setSortBy(column);
+    setSortOrder(newSortOrder);
+    fetchWaivers(currentPage, rowsPerPage, search, filter, column, newSortOrder);
   };
 
   // Initial fetch
@@ -210,17 +222,29 @@ function HistoryPage() {
 //   ];
 const desktopColumns = [
   { 
-    name: "Waiver ID", 
+    name: (
+      <div 
+        onClick={() => handleSort('waiver_id')} 
+        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+      >
+        Waiver ID {sortBy === 'waiver_id' && (sortOrder === 'ASC' ? '↑' : '↓')}
+      </div>
+    ),
     selector: row => row.waiver_id,
     cell: (row) => <strong>#{row.waiver_id}</strong>, 
-    width: "100px", 
-    sortable: true 
+    width: "120px"
   },
 
   {
-    name: "Name",
+    name: (
+      <div 
+        onClick={() => handleSort('signer_name')} 
+        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+      >
+        Name {sortBy === 'signer_name' && (sortOrder === 'ASC' ? '↑' : '↓')}
+      </div>
+    ),
     selector: row => `${row.first_name} ${row.last_name}`,
-    sortable: true,
     cell: row => (
       <span title={`${row.first_name} ${row.last_name}`}>
         {row.first_name} {row.last_name}
@@ -238,13 +262,19 @@ const desktopColumns = [
     },
 
   { 
-    name: "Signed Date & Time", 
+    name: (
+      <div 
+        onClick={() => handleSort('signed_at')} 
+        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+      >
+        Signed Date & Time {sortBy === 'signed_at' && (sortOrder === 'ASC' ? '↑' : '↓')}
+      </div>
+    ),
     selector: row => row.signed_at, 
     cell: row => <span>{row.signed_at || '-'}</span>,
-    sortable: true, 
     wrap: true, 
     grow: 2, 
-    minWidth: "200px" 
+    minWidth: "220px" 
   },
 
   { 
@@ -316,13 +346,29 @@ const desktopColumns = [
   // Mobile columns
   const mobileColumns = [
     { 
-      name: "Waiver ID", 
+      name: (
+        <div 
+          onClick={() => handleSort('waiver_id')} 
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          Waiver ID {sortBy === 'waiver_id' && (sortOrder === 'ASC' ? '↑' : '↓')}
+        </div>
+      ),
       selector: row => row.waiver_id,
       cell: (row) => <strong>#{row.waiver_id}</strong>,
-      sortable: true,
-      width: "100px"
+      width: "130px"
     },
-    { name: "Name", selector: row => `${row.first_name} ${row.last_name}`, sortable: true }
+    { 
+      name: (
+        <div 
+          onClick={() => handleSort('signer_name')} 
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          Name {sortBy === 'signer_name' && (sortOrder === 'ASC' ? '↑' : '↓')}
+        </div>
+      ),
+      selector: row => `${row.first_name} ${row.last_name}`
+    }
   ];
 
   // Expandable component for mobile
@@ -450,7 +496,7 @@ const ExpandedComponent = ({ data }) => (
               </div>
 
               <div className="d-flex gap-2  gap-md-2 align-items-center mb-2">
-                {['All', 'Confirmed', 'Unconfirmed', 'Inaccurate'].map(type => (
+                {['All', 'Completed', 'Unconfirmed', 'Inaccurate'].map(type => (
                   <div
                     key={type}
                     className={`all-waiver ${filter === type ? 'active-tab' : ''}`}

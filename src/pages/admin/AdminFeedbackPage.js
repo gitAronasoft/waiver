@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "../../utils/axios";
 import Header from "./components/header";
 import { convertToEST } from "../../utils/time";
@@ -10,10 +10,13 @@ import { BACKEND_URL } from '../../config';
 
 const AdminFeedbackPage = () => {
   const [data, setData] = useState([]);
-  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [totalRows, setTotalRows] = useState(0);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -22,7 +25,7 @@ const AdminFeedbackPage = () => {
   }, []);
 
   // Fetch feedback with server-side pagination
-  const fetchFeedback = (page = 1, limit = 10, searchQuery = "") => {
+  const fetchFeedback = (page = 1, limit = 20, searchQuery = "") => {
     setLoading(true);
     
     const params = new URLSearchParams({
@@ -34,7 +37,7 @@ const AdminFeedbackPage = () => {
     axios.get(`${BACKEND_URL}/api/feedback/list?${params}`)
       .then(res => {
         setData(res.data.data || res.data);
-        setPagination(res.data.pagination || { total: res.data.length, page: 1, limit: 10, totalPages: 1 });
+        setTotalRows(res.data.pagination?.total || res.data.length || 0);
       })
       .catch(err => {
         console.error("Failed to fetch feedback", err);
@@ -45,21 +48,33 @@ const AdminFeedbackPage = () => {
 
   // Initial fetch
   useEffect(() => {
-    fetchFeedback(pagination.page, pagination.limit, search);
+    fetchFeedback(currentPage, rowsPerPage, search);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refetch when search changes
   useEffect(() => {
-    fetchFeedback(1, pagination.limit, search);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    setCurrentPage(1);
+    fetchFeedback(1, rowsPerPage, search);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   // Handle page change
   const handlePageChange = (page) => {
-    fetchFeedback(page, pagination.limit, search);
+    if (page === currentPage) return;
+    setCurrentPage(page);
+    fetchFeedback(page, rowsPerPage, search);
   };
 
   // Handle rows per page change
   const handlePerRowsChange = (newPerPage, page) => {
+    if (newPerPage === rowsPerPage) return;
+    setRowsPerPage(newPerPage);
+    setCurrentPage(page);
     fetchFeedback(page, newPerPage, search);
   };
 
@@ -213,9 +228,9 @@ const AdminFeedbackPage = () => {
                   data={data}
                   pagination
                   paginationServer
-                  paginationTotalRows={pagination.total}
-                  paginationDefaultPage={pagination.page}
-                  paginationPerPage={pagination.limit}
+                  paginationTotalRows={totalRows}
+                  paginationDefaultPage={currentPage}
+                  paginationPerPage={rowsPerPage}
                   onChangePage={handlePageChange}
                   onChangeRowsPerPage={handlePerRowsChange}
                   responsive

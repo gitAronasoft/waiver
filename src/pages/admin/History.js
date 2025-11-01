@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from "react-router-dom";
 import axios from '../../utils/axios';
 import Skeleton from 'react-loading-skeleton';
@@ -11,7 +11,9 @@ import { BACKEND_URL } from '../../config';
 
 function HistoryPage() {
   const [data, setData] = useState([]);
-  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10, totalPages: 0 });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [totalRows, setTotalRows] = useState(0);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -19,6 +21,7 @@ function HistoryPage() {
   const [modalType, setModalType] = useState("");
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const isInitialMount = useRef(true);
 
   const navigate = useNavigate();
 
@@ -30,7 +33,7 @@ function HistoryPage() {
   }, []);
 
   // Fetch waivers with server-side pagination
-  const fetchWaivers = (page = 1, limit = 10, searchQuery = "", statusFilter = 'All') => {
+  const fetchWaivers = (page = 1, limit = 20, searchQuery = "", statusFilter = 'All') => {
     setLoading(true);
     
     let status = '';
@@ -48,7 +51,7 @@ function HistoryPage() {
     axios.get(`${BACKEND_URL}/api/waivers/getallwaivers?${params}`)
       .then(res => {
         setData(res.data.data || res.data);
-        setPagination(res.data.pagination || { total: res.data.length, page: 1, limit: 10, totalPages: 1 });
+        setTotalRows(res.data.pagination?.total || res.data.length || 0);
       })
       .catch(err => {
         console.error("Error fetching waivers:", err);
@@ -59,12 +62,19 @@ function HistoryPage() {
 
   // Initial fetch
   useEffect(() => {
-    fetchWaivers(pagination.page, pagination.limit, search, filter);
+    fetchWaivers(currentPage, rowsPerPage, search, filter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Refetch when filter or search changes
   useEffect(() => {
-    fetchWaivers(1, pagination.limit, search, filter);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    setCurrentPage(1);
+    fetchWaivers(1, rowsPerPage, search, filter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, search]);
 
   const openModal = (entry, type) => {
@@ -86,13 +96,13 @@ function HistoryPage() {
         await axios.delete(`${BACKEND_URL}/api/waivers/${selectedEntry.waiver_id}`);
         toast.success("Waiver deleted successfully.");
         // Refetch current page after delete
-        fetchWaivers(pagination.page, pagination.limit, search, filter);
+        fetchWaivers(currentPage, rowsPerPage, search, filter);
       } else if (modalType === "status") {
         const newStatus = selectedEntry.status === 1 ? 0 : 1;
         await axios.put(`${BACKEND_URL}/api/waivers/${selectedEntry.waiver_id}/status`, { status: newStatus });
         toast.success(`Waiver marked as ${newStatus === 1 ? 'Confirmed' : 'Unconfirmed'}.`);
         // Refetch current page after status change
-        fetchWaivers(pagination.page, pagination.limit, search, filter);
+        fetchWaivers(currentPage, rowsPerPage, search, filter);
       }
     } catch (err) {
       console.error(err);
@@ -104,11 +114,16 @@ function HistoryPage() {
 
   // Handle page change
   const handlePageChange = (page) => {
-    fetchWaivers(page, pagination.limit, search, filter);
+    if (page === currentPage) return;
+    setCurrentPage(page);
+    fetchWaivers(page, rowsPerPage, search, filter);
   };
 
   // Handle rows per page change
   const handlePerRowsChange = (newPerPage, page) => {
+    if (newPerPage === rowsPerPage) return;
+    setRowsPerPage(newPerPage);
+    setCurrentPage(page);
     fetchWaivers(page, newPerPage, search, filter);
   };
 
@@ -457,9 +472,9 @@ const ExpandedComponent = ({ data }) => (
                 data={data}
                 pagination
                 paginationServer
-                paginationTotalRows={pagination.total}
-                paginationDefaultPage={pagination.page}
-                paginationPerPage={pagination.limit}
+                paginationTotalRows={totalRows}
+                paginationDefaultPage={currentPage}
+                paginationPerPage={rowsPerPage}
                 onChangePage={handlePageChange}
                 onChangeRowsPerPage={handlePerRowsChange}
                 responsive

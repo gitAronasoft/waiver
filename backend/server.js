@@ -17,7 +17,7 @@ require('./ratingEmailScheduler');
 const app = express();
 
 // Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 const PORT = process.env.PORT || 8080;
 

@@ -805,14 +805,20 @@ const updateProfile = async (req, res) => {
 
     // Delete old profile image from server if new image was uploaded
     if (req.file && oldProfileImage) {
-      const oldImagePath = path.join(__dirname, '../../public', oldProfileImage);
-      fs.unlink(oldImagePath, (err) => {
-        if (err) {
-          console.log('Could not delete old profile image:', err.message);
-        } else {
-          console.log('✅ Old profile image deleted:', oldProfileImage);
-        }
-      });
+      const oldImagePath = path.join(__dirname, '../public', oldProfileImage);
+      
+      // Check if file exists before attempting to delete
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlink(oldImagePath, (err) => {
+          if (err) {
+            console.log('⚠️ Could not delete old profile image:', err.message);
+          } else {
+            console.log('✅ Old profile image deleted:', oldProfileImage);
+          }
+        });
+      } else {
+        console.log('ℹ️ Old profile image not found (already deleted or moved):', oldProfileImage);
+      }
     }
 
     // Fetch updated staff data

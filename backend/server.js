@@ -55,9 +55,6 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-// Static files for uploaded content
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 // API Routes
 app.use('/api/waivers', waiverRoutes);
 app.use('/api/auth', authRoutes);

@@ -203,6 +203,10 @@ function NewCustomerForm() {
     const updated = [...minorList];
     updated.splice(index, 1);
     setMinorList(updated);
+    
+    if (updated.length === 0) {
+      setFormData((prev) => ({ ...prev, signing_for_minor: false }));
+    }
   };
 
   const handleSubmit = async (e) => {

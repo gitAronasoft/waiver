@@ -1,48 +1,146 @@
 # Skate & Play Waiver Management System
 
 ## Overview
+A full-stack waiver management system for Skate & Play. This application allows customers to sign digital waivers with OTP verification, and provides an admin panel for managing waivers, staff, and customer feedback.
 
-The Skate & Play Waiver Management System is a full-stack digital solution designed to manage customer waivers for recreational facilities. It facilitates digital waiver signing with signature capture, supports multiple waivers and minors per customer, provides customers with access to their waiver history, and offers extensive administrative tools for verification and management. The system aims to streamline the waiver process, improve compliance, and enhance operational efficiency.
+## Project Architecture
 
-## User Preferences
+### Frontend (React)
+- **Framework**: React 19.2.0 with Create React App
+- **State Management**: Redux Toolkit with Redux Persist
+- **Routing**: React Router DOM
+- **UI Components**: Custom components with Bootstrap
+- **Port**: 5000 (webview)
+- **Location**: Root directory
 
-- Simple language in explanations
-- Iterative development with frequent small updates
-- Ask before major architectural changes
-- Do NOT modify `Backend-old` folder or duplicate components
+### Backend (Node.js/Express)
+- **Framework**: Express.js
+- **Database**: MySQL (external hosted database)
+- **Authentication**: JWT with bcrypt
+- **Port**: 8080 (console)
+- **Location**: `/backend` directory
 
-## System Architecture
+### Key Features
+1. **Customer Waiver Flow**
+   - New customer registration with OTP verification
+   - Existing customer login
+   - Digital signature capture
+   - Rule reminders and acknowledgment
+   - Star rating and feedback system
 
-The system utilizes a "one user per phone number" database architecture, emphasizing historical snapshot preservation for legal compliance.
+2. **Admin Panel**
+   - Staff management (add, update, list)
+   - Waiver history and PDF generation
+   - Client profiles
+   - Feedback management
+   - Authentication with password reset
 
-**UI/UX Decisions:**
-- **Frontend Framework**: React 19 with Redux Toolkit.
-- **Styling**: Bootstrap 5 for responsiveness.
-- **Design Language**: Modern card-based UI with a purple, yellow, and brown color scheme, featuring 20px border-radius, subtle shadows, and 3px colored bottom borders with hover effects.
-- **User Dashboard**: Card-based responsive grid displaying waiver history with purple gradient headers, status badges, and interactive elements.
-- **Workflow**: Guided, step-by-step customer waiver flow and intuitive admin dashboards.
+3. **Integrations**
+   - Twilio SMS for OTP verification and rating requests
+   - Mailchimp for email list management
+   - Nodemailer for email notifications
+   - Scheduled rating email/SMS system
 
-**Technical Implementations:**
-- **Database**: MySQL (MariaDB 11.8.3) storing user, waiver, minor, staff, OTP, and feedback data. Key tables include `users` (current customers), `waivers` (historical waiver data with `signer_*` snapshot columns and `minors_snapshot` JSON), `minors` (active minor profiles), `otps` (temporary one-time passwords), `staff` (admin accounts with role-based access), and `feedback` (customer ratings and messages).
-- **Backend**: Node.js with Express 4, providing RESTful API endpoints.
-- **Authentication**: JWT for staff/admin and Twilio-based OTP for customer verification.
-- **State Management**: Redux Toolkit with `redux-persist` for customer waiver flow (`waiverSession`) and admin authentication (`auth`).
-- **API Endpoints**: Categorized for authentication, waiver management, staff management, and feedback. Waiver flow endpoints manage customer data, minor records, signature capture, and historical snapshots. Admin tools include daily waiver verification, full waiver history, staff CRUD, and feedback review.
+## Recent Changes (Nov 1, 2025)
+- Initial GitHub import setup for Replit environment
+- Configured frontend to run on port 5000 with host allowance
+- Configured backend to run on port 8080
+- Moved database credentials to environment variables
+- Set up dual workflows for frontend and backend
+- Configured deployment settings for VM (full-stack)
 
-**Feature Specifications:**
-- **Minor Management**: Minors are associated with a user; updates deactivate old records and create new ones, while historical waivers retain their `minors_snapshot`.
-- **Historical Snapshotting**: User and minor data are captured and stored directly in the `waivers` table upon signature for legal immutability.
-- **Signature Compression**: Digital signatures are captured and converted to JPEG (50% quality) to reduce storage.
-- **OTP Security**: 4-digit OTPs expire in 5 minutes, are single-use, and invalidate previous OTPs.
-- **Role-Based Access Control**: Admin functionalities are secured by JWT with roles: `staff`, `admin`, `superadmin`.
-- **PDF Generation**: Optimized to generate multi-page PDFs from waiver data with reduced file sizes (50-80KB).
+## Environment Setup
 
-## External Dependencies
+### Frontend Environment Variables (.env)
+```
+PORT=5000
+HOST=0.0.0.0
+DANGEROUSLY_DISABLE_HOST_CHECK=true
+WDS_SOCKET_PORT=0
+REACT_APP_GOOGLE_REVIEW_LINK=https://g.page/r/YOUR_GOOGLE_REVIEW_LINK/review
+```
 
--   **Twilio**: Used for SMS-based One-Time Passwords (OTPs) for customer phone verification. Requires E.164 format for phone numbers.
--   **Mailchimp**: Integrates with the `createWaiver` API to add new customers to a marketing email list, with duplicate prevention using MD5 hash.
--   **Nodemailer**: Used for sending email notifications (password resets, feedback, new staff accounts).
--   **Node-Cron**: Schedules automated tasks, such as sending rating requests to customers.
--   **React Signature Canvas**: Frontend library for capturing digital signatures.
--   **Axios**: HTTP client for frontend API requests.
--   **html2canvas**: Used in PDF generation to convert HTML elements to canvas images.
+### Backend Environment Variables (backend/.env)
+Required:
+- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT` - MySQL database credentials
+- `JWT_SECRET` - Secret key for JWT token signing
+- `PORT` - Backend server port (default: 8080)
+- `NODE_ENV` - Environment (development/production)
+
+Optional (for full functionality):
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_MESSAGING_SERVICE_SID` - SMS/OTP services
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` - Email notifications
+- `MAILCHIMP_API_KEY`, `MAILCHIMP_LIST_ID`, `MAILCHIMP_DC` - Email marketing integration
+- `FRONTEND_URL`, `REACT_LINK_BASE` - URLs for rating links in emails/SMS
+
+## Development Workflow
+
+### Running Locally
+1. Backend automatically starts on port 8080
+2. Frontend automatically starts on port 5000
+3. Both workflows are configured and auto-start
+
+### Database
+- External MySQL database is pre-configured
+- Connection details stored in environment variables
+- Database includes tables for waivers, staff, feedback, and ratings
+
+### Deployment
+- Deployment type: VM (required for full-stack with persistent backend)
+- Build command: `npm run build` (builds React production bundle)
+- Run command: Starts backend server and serves frontend static files
+
+## File Structure
+```
+/
+├── backend/              # Express.js backend
+│   ├── config/          # Database configuration
+│   ├── controllers/     # Route controllers
+│   ├── middleware/      # Auth middleware
+│   ├── routes/          # API routes
+│   ├── utils/           # Helper utilities
+│   └── server.js        # Main server file
+├── src/                 # React frontend source
+│   ├── components/      # Reusable components
+│   ├── pages/           # Page components
+│   ├── store/           # Redux store and slices
+│   ├── utils/           # Frontend utilities
+│   └── config.js        # Frontend configuration
+├── public/              # Static assets
+└── build/               # Production build (generated)
+```
+
+## API Endpoints
+
+### Authentication (`/api/auth`)
+- POST `/login` - Staff login
+- POST `/forgot-password` - Request password reset
+- POST `/reset-password/:token` - Reset password
+
+### Waivers (`/api/waivers`)
+- POST `/send-otp` - Send OTP for verification
+- POST `/verify-otp` - Verify OTP code
+- POST `/submit` - Submit new waiver
+- GET `/history` - Get waiver history (admin)
+- GET `/customer/:customerId` - Get customer waivers
+- GET `/:id/pdf` - Generate waiver PDF
+
+### Staff (`/api/staff`)
+- GET `/` - List all staff (requires auth)
+- POST `/` - Add new staff (requires auth)
+- PUT `/:id` - Update staff (requires auth)
+- DELETE `/:id` - Delete staff (requires auth)
+
+### Feedback (`/api/feedback`)
+- POST `/` - Submit customer feedback
+- GET `/` - Get all feedback (requires auth)
+
+### Ratings (`/api/rating`)
+- POST `/submit` - Submit star rating
+- GET `/:id` - Get rating details
+
+## Notes
+- The application is fully functional in the Replit environment
+- Database is externally hosted and pre-configured
+- Optional services (Twilio, SMTP, Mailchimp) can be configured for full functionality
+- The system includes automated rating request scheduling via cron jobs

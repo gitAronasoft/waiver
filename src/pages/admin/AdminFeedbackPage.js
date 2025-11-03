@@ -91,7 +91,19 @@ const AdminFeedbackPage = () => {
   };
 
   const desktopColumns = [
-    { name: "#", cell: (row, index) => index + 1, width: "60px" },
+    { 
+      name: (
+        <div 
+          onClick={() => handleSort('id')} 
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+        >
+          # {sortBy === 'id' && (sortOrder === 'ASC' ? '↑' : '↓')}
+        </div>
+      ),
+      selector: row => row.id,
+      cell: (row, index) => <span>{row.id || index + 1}</span>,
+      width: "80px"
+    },
     {
       name: "Customer",
       selector: row => `${row.first_name || ""} ${row.last_name || ""}`,
@@ -99,7 +111,8 @@ const AdminFeedbackPage = () => {
         <span title={`${row.first_name || ""} ${row.last_name || ""}`}>
           {row.first_name || ""} {row.last_name || ""}
         </span>
-      )
+      ),
+      sortable: false
     },
     {
       name: (
@@ -131,14 +144,49 @@ const AdminFeedbackPage = () => {
     {
       name: (
         <div 
-          onClick={() => handleSort('waiver_id')} 
+          onClick={() => handleSort('rating')} 
           style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
         >
-          Waiver ID {sortBy === 'waiver_id' && (sortOrder === 'ASC' ? '↑' : '↓')}
+          Rating {sortBy === 'rating' && (sortOrder === 'ASC' ? '↑' : '↓')}
         </div>
       ),
-      selector: row => row.waiver_id || "-",
-      width: "120px"
+      selector: row => row.rating || "-",
+      width: "110px"
+    },
+    {
+      name: "Issue",
+      selector: row => row.issue || "-",
+      sortable: false,
+      cell: row => <span title={row.issue || "-"}>{row.issue || "-"}</span>
+    },
+    {
+      name: "Staff Name",
+      selector: row => row.staff_name || "-",
+      sortable: false,
+      cell: row => <span title={row.staff_name || "-"}>{row.staff_name || "-"}</span>
+    },
+    {
+      name: "Message",
+      selector: row => row.message || "-",
+      sortable: false,
+      cell: row => <span title={row.message || "-"}>{row.message || "-"}</span>,
+      wrap: true,
+      grow: 2
+    },
+    {
+      name: "Date",
+      selector: row => row.created_at ? convertToEST(row.created_at) : "-",
+      sortable: false,
+      wrap: true,
+      minWidth: "150px"
+    }
+  ];
+
+  const mobileColumns = [
+    {
+      name: "Customer",
+      selector: row => `${row.first_name || ""} ${row.last_name || ""}`,
+      sortable: false
     },
     {
       name: (
@@ -151,53 +199,6 @@ const AdminFeedbackPage = () => {
       ),
       selector: row => row.rating || "-",
       width: "110px"
-    },
-    {
-      name: "Visit Date",
-      selector: row => row.visit_date ? convertToEST(row.visit_date) : "-",
-      sortable: true,
-      wrap: true,
-      minWidth: "150px"
-    },
-    {
-      name: "Issue",
-      selector: row => row.issue || "-",
-      sortable: true,
-      cell: row => <span title={row.issue || "-"}>{row.issue || "-"}</span>
-    },
-    {
-      name: "Staff Name",
-      selector: row => row.staff_name || "-",
-      sortable: true,
-      cell: row => <span title={row.staff_name || "-"}>{row.staff_name || "-"}</span>
-    },
-    {
-      name: "Message",
-      selector: row => row.message || "-",
-      sortable: true,
-      cell: row => <span title={row.message || "-"}>{row.message || "-"}</span>,
-      wrap: true,
-      grow: 2
-    },
-    {
-      name: "Date",
-      selector: row => row.created_at ? convertToEST(row.created_at) : "-",
-      sortable: true,
-      wrap: true,
-      minWidth: "150px"
-    }
-  ];
-
-  const mobileColumns = [
-    {
-      name: "Customer",
-      selector: row => `${row.first_name || ""} ${row.last_name || ""}`,
-      sortable: true
-    },
-    {
-      name: "Rating",
-      selector: row => row.rating || "-",
-      sortable: true
     }
   ];
 
@@ -208,12 +209,6 @@ const AdminFeedbackPage = () => {
       </div>
       <div style={{ marginTop: "10px" }}>
         <strong>Phone:</strong> {data.cell_phone || "-"}
-      </div>
-      <div style={{ marginTop: "10px" }}>
-        <strong>Waiver ID:</strong> {data.waiver_id || "-"}
-      </div>
-      <div style={{ marginTop: "10px" }}>
-        <strong>Visit Date:</strong> {data.visit_date ? convertToEST(data.visit_date) : "-"}
       </div>
       <div style={{ marginTop: "10px" }}>
         <strong>Issue:</strong> {data.issue || "-"}

@@ -1,18 +1,11 @@
 const mysql = require('mysql2');
 
 const pool = mysql.createPool({
-
-  host:"194.163.46.7",
-  user:"u742355347_waiver_replit",
-  password:"Arona1@1@1@1",
-  database:"u742355347_waiver_replit",
-  
-  // host: process.env.DB_HOST,
-  // user: process.env.DB_USER,
-  // password: process.env.DB_PASSWORD,
-  // database: process.env.DB_NAME,  
-  
-  // port: process.env.DB_PORT,
+  host: process.env.DB_HOST || "194.163.46.7",
+  user: process.env.DB_USER || "u742355347_waiver_replit",
+  password: process.env.DB_PASSWORD || "Arona1@1@1@1",
+  database: process.env.DB_NAME || "u742355347_waiver_replit",
+  port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

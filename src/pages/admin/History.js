@@ -258,7 +258,8 @@ const desktopColumns = [
         row.minors?.length > 0
           ? row.minors.map(m => `${m.first_name} ${m.last_name}`).join(", ")
           : "-",
-      wrap: true
+      wrap: true,
+      sortable: false
     },
 
   { 
@@ -284,7 +285,7 @@ const desktopColumns = [
         {row.status === 1 ? 'Confirmed' : row.status === 0 ? 'Unconfirmed' : 'Inaccurate'}
       </span>
     ),
-    sortable: true
+    sortable: false
   },
 
   { 
@@ -308,7 +309,8 @@ const desktopColumns = [
         width={40}
         disabled={row.status === 2}
       />
-    )
+    ),
+    sortable: false
   },
 
   {
@@ -318,7 +320,7 @@ const desktopColumns = [
         {row.rating_email_sent === 1 ? "Mail Sent" : "Not Sent"}
       </span>
     ),
-    sortable: true
+    sortable: false
   },
 
   {
@@ -328,7 +330,7 @@ const desktopColumns = [
         {row.rating_sms_sent === 1 ? "SMS Sent" : "Not Sent"}
       </span>
     ),
-    sortable: true
+    sortable: false
   },
 
   { 
@@ -338,7 +340,8 @@ const desktopColumns = [
         <i className="fas fa-eye" style={{ cursor: 'pointer' }} onClick={() => navigate(`/admin/client-profile/${row.id}`)} title="View Profile" />
         <i className="fas fa-trash" style={{ cursor: 'pointer', color: 'red' }} onClick={() => openModal(row, "delete")} title="Delete Waiver" />
       </div>
-    )
+    ),
+    sortable: false
   }
 ];
 

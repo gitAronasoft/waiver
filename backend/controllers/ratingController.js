@@ -1,5 +1,5 @@
 const db = require('../config/database');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 
 /**
  * Validate rating token and return waiver/customer info

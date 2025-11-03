@@ -1,6 +1,6 @@
 const cron = require("node-cron");
 const db = require("./config/database");
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const sendRatingEmail = require("./utils/sendRatingEmail");
 const sendRatingSMS = require("./utils/sendRatingSMS");
 
@@ -44,7 +44,7 @@ cron.schedule("0 * * * *", async () => {
           console.log(`Using existing token for waiver ID ${waiver.waiver_id}`);
         } else {
           // Generate new token
-          token = uuidv4();
+          token = randomUUID();
           await db.query(
             'INSERT INTO rating_tokens (waiver_id, token, used) VALUES (?, ?, 0)',
             [waiver.waiver_id, token]

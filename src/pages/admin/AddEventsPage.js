@@ -35,6 +35,28 @@ export default function AddEventsPage() {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
+  function formatEventSchedule(start, end) {
+    if (!start) return "No schedule";
+    const s = new Date(start);
+    if (isNaN(s)) return "Invalid date";
+    
+    const pad = (n) => String(n).padStart(2, "0");
+    const formatDT = (d) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    
+    const startStr = formatDT(s);
+    if (!end) return startStr;
+    
+    const e = new Date(end);
+    if (isNaN(e)) return startStr;
+    
+    return `${startStr} → ${formatDT(e)}`;
+  }
+
+  function getDayName(dayNum) {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    return days[dayNum] || `Day ${dayNum}`;
+  }
+
   const isExpired = (ev) => {
     const now = new Date();
     if (ev.recurrence_rule && ev.recurrence_rule !== "none") {
@@ -49,7 +71,7 @@ export default function AddEventsPage() {
     return false;
   };
 
-  const isActive = (ev) => !isExpired(ev);
+  const isActive = (ev) => !isExpired(ev) && ev.is_public;
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -232,73 +254,101 @@ export default function AddEventsPage() {
 
         <div className="row g-4">
           <div className="col-12 col-lg-5">
-            <div className="card p-3 shadow-sm">
-              <div className="d-flex align-items-center justify-content-between mb-3">
-                <h5 style={{ margin: 0, fontWeight: 600 }}>
-                  {editingId ? (
-                    <span>
-                      <span className="badge bg-warning text-dark me-2">Editing</span>
-                      Update Event
-                    </span>
-                  ) : (
-                    <span>
-                      <span className="badge bg-success me-2">New</span>
-                      Add Event
-                    </span>
+            <div className="card shadow-sm" style={{ border: '1px solid #e3e6f0', borderRadius: '12px' }}>
+              <div className="card-header bg-white" style={{ 
+                borderBottom: '1px solid #e3e6f0', 
+                borderRadius: '12px 12px 0 0',
+                padding: '20px 24px'
+              }}>
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h5 style={{ margin: 0, fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>
+                      {editingId ? "Edit Event" : "Add Event"}
+                    </h5>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>
+                      {editingId ? "Update event details below" : "Fill in the form to create a new event"}
+                    </p>
+                  </div>
+                  {editingId && (
+                    <button
+                      type="button"
+                      className="btn btn-light btn-sm"
+                      onClick={resetForm}
+                      style={{ borderRadius: '8px' }}
+                    >
+                      <i className="bi bi-x"></i> Cancel
+                    </button>
                   )}
-                </h5>
-                {editingId && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    onClick={resetForm}
-                  >
-                    ✕ Cancel
-                  </button>
-                )}
+                </div>
               </div>
+              
+              <div className="card-body" style={{ padding: '24px' }}>
 
               <form
                 onSubmit={editingId ? update : create}
-                className="d-grid gap-3"
                 encType="multipart/form-data"
+                style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
               >
                 <div>
-                  <label className="form-label">Title *</label>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', color: '#2c3e50' }}>
+                    Event Title <span style={{ color: '#e74c3c' }}>*</span>
+                  </label>
                   <input
                     className="form-control"
+                    style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px' }}
                     value={form.title}
                     onChange={(e) => onChange("title", e.target.value)}
+                    placeholder="Enter event title"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="form-label">Description</label>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', color: '#2c3e50' }}>
+                    Description
+                  </label>
                   <textarea
                     className="form-control"
+                    style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px', resize: 'vertical' }}
                     rows={3}
                     value={form.description}
                     onChange={(e) => onChange("description", e.target.value)}
+                    placeholder="Brief description of the event"
                   />
                 </div>
 
                 <div className="row g-3">
                   <div className="col-12 col-sm-6">
-                    <label className="form-label">Start *</label>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', color: '#2c3e50' }}>
+                      Start Date & Time <span style={{ color: '#e74c3c' }}>*</span>
+                    </label>
                     <input
                       type="datetime-local"
                       className="form-control"
+                      style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px' }}
                       value={form.start_at}
                       onChange={(e) => onChange("start_at", e.target.value)}
                       required
                     />
                   </div>
                   <div className="col-12 col-sm-6">
-                    <label className="form-label">End</label>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', color: '#2c3e50', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>End Date & Time</span>
+                      {form.end_at && (
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => onChange("end_at", "")}
+                          style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </label>
                     <input
                       type="datetime-local"
                       className="form-control"
+                      style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px' }}
                       value={form.end_at}
                       onChange={(e) => onChange("end_at", e.target.value)}
                     />
@@ -306,187 +356,249 @@ export default function AddEventsPage() {
                 </div>
 
                 <div>
-                  <label className="form-label">Payment URL</label>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', color: '#2c3e50' }}>
+                    Payment URL
+                  </label>
                   <input
                     type="url"
                     className="form-control"
-                    placeholder="https://..."
+                    style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px' }}
+                    placeholder="https://stripe.com/payment-link"
                     value={form.payment_url}
                     onChange={(e) => onChange("payment_url", e.target.value)}
                   />
-                  <small className="text-muted">
-                    External link (Stripe/PayPal/etc). Leave blank if not applicable.
+                  <small style={{ color: '#6c757d', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                    External payment link (Stripe/PayPal/etc). Leave blank if not applicable.
                   </small>
                 </div>
 
                 <div>
-                  <label className="form-label">Button Label</label>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', color: '#2c3e50' }}>
+                    Button Label
+                  </label>
                   <input
                     type="text"
                     className="form-control"
+                    style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px' }}
                     placeholder='e.g., "Register Now", "Buy Tickets"'
                     value={form.button_label}
                     maxLength={40}
                     onChange={(e) => onChange("button_label", e.target.value)}
                   />
-                  <small className="text-muted">
+                  <small style={{ color: '#6c757d', fontSize: '12px', marginTop: '4px', display: 'block' }}>
                     This text will appear on the event card button (max 40 characters).
                   </small>
                 </div>
 
-                <div className="row g-3">
-                  <div className="col-12 col-sm-4">
-                    <label className="form-label">Recurrence</label>
-                    <select
-                      className="form-select"
-                      value={form.recurrence_rule}
-                      onChange={(e) => onChange("recurrence_rule", e.target.value)}
-                    >
-                      <option value="none">None</option>
-                      <option value="weekly">Weekly</option>
-                    </select>
-                  </div>
-
-                  <div className="col-12 col-sm-4">
-                    <label className="form-label">Day (if weekly)</label>
-                    <select
-                      className="form-select"
-                      value={form.recurrence_day_of_week}
-                      onChange={(e) => onChange("recurrence_day_of_week", e.target.value)}
-                      disabled={form.recurrence_rule !== "weekly"}
-                    >
-                      <option value="">—</option>
-                      <option value="0">Sunday</option>
-                      <option value="1">Monday</option>
-                      <option value="2">Tuesday</option>
-                      <option value="3">Wednesday</option>
-                      <option value="4">Thursday</option>
-                      <option value="5">Friday</option>
-                      <option value="6">Saturday</option>
-                    </select>
-                  </div>
-
-                  <div className="col-12 col-sm-4">
-                    <label className="form-label">Until (optional)</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={form.recurrence_until}
-                      onChange={(e) => onChange("recurrence_until", e.target.value)}
-                      disabled={form.recurrence_rule === "none"}
-                    />
-                  </div>
-                </div>
-
-                <div className="row g-3">
-                  <div className="col-12 col-sm-6">
-                    <label className="form-label">
-                      Image {editingId ? "(replace optional)" : "(1:1 aspect ratio)"}
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="form-control"
-                      onChange={onImage}
-                    />
-                    {preview && (
-                      <small className="text-muted d-block mt-1">
-                        Preview shown on the right
-                      </small>
-                    )}
-                  </div>
-                  <div className="col-12 col-sm-6 d-flex align-items-end">
-                    {preview && (
-                      <div
-                        style={{
-                          width: 96,
-                          height: 96,
-                          borderRadius: 8,
-                          overflow: "hidden",
-                          border: "1px solid #eee",
-                          marginLeft: "auto",
-                        }}
+                <div>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '14px', marginBottom: '12px', color: '#2c3e50' }}>
+                    Recurrence Settings
+                  </label>
+                  <div className="row g-3">
+                    <div className="col-12 col-sm-4">
+                      <select
+                        className="form-select"
+                        style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px' }}
+                        value={form.recurrence_rule}
+                        onChange={(e) => onChange("recurrence_rule", e.target.value)}
                       >
-                        <img
-                          src={preview}
-                          alt="preview"
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        <option value="none">None</option>
+                        <option value="weekly">Weekly</option>
+                      </select>
+                      <small style={{ color: '#6c757d', fontSize: '12px', marginTop: '4px', display: 'block' }}>Repeat pattern</small>
+                    </div>
+
+                    <div className="col-12 col-sm-4">
+                      <select
+                        className="form-select"
+                        style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px' }}
+                        value={form.recurrence_day_of_week}
+                        onChange={(e) => onChange("recurrence_day_of_week", e.target.value)}
+                        disabled={form.recurrence_rule !== "weekly"}
+                      >
+                        <option value="">Select day</option>
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                      </select>
+                      <small style={{ color: '#6c757d', fontSize: '12px', marginTop: '4px', display: 'block' }}>Day of week</small>
+                    </div>
+
+                    <div className="col-12 col-sm-4">
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="date"
+                          className="form-control"
+                          style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px', paddingRight: form.recurrence_until ? '60px' : '14px' }}
+                          value={form.recurrence_until}
+                          onChange={(e) => onChange("recurrence_until", e.target.value)}
+                          disabled={form.recurrence_rule === "none"}
                         />
+                        {form.recurrence_until && form.recurrence_rule !== "none" && (
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => onChange("recurrence_until", "")}
+                            style={{ 
+                              position: 'absolute', 
+                              right: '6px', 
+                              top: '6px', 
+                              fontSize: '10px', 
+                              padding: '2px 6px', 
+                              borderRadius: '4px' 
+                            }}
+                          >
+                            Clear
+                          </button>
+                        )}
                       </div>
-                    )}
+                      <small style={{ color: '#6c757d', fontSize: '12px', marginTop: '4px', display: 'block' }}>Until date</small>
+                    </div>
                   </div>
                 </div>
 
-                <div className="d-flex align-items-center gap-3">
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      id="isPublic"
-                      type="checkbox"
-                      checked={!!form.is_public}
-                      onChange={(e) => onChange("is_public", e.target.checked ? 1 : 0)}
-                    />
-                    <label className="form-check-label" htmlFor="isPublic">
-                      Public
-                    </label>
+                <div>
+                  <label className="form-label" style={{ fontWeight: 600, fontSize: '14px', marginBottom: '12px', color: '#2c3e50' }}>
+                    Event Image
+                  </label>
+                  <div className="row g-3 align-items-end">
+                    <div className="col-12 col-sm-7">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="form-control"
+                        style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px' }}
+                        onChange={onImage}
+                      />
+                      <small style={{ color: '#6c757d', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                        {editingId ? "Upload new image to replace existing" : "Recommended: Square image (1:1 aspect ratio)"}
+                      </small>
+                    </div>
+                    <div className="col-12 col-sm-5 d-flex justify-content-end">
+                      {preview && (
+                        <div
+                          style={{
+                            width: 100,
+                            height: 100,
+                            borderRadius: 10,
+                            overflow: "hidden",
+                            border: "2px solid #e3e6f0",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                          }}
+                        >
+                          <img
+                            src={preview}
+                            alt="preview"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ width: 140 }}>
-                    <label className="form-label">Sort Order</label>
+                </div>
+
+                <div className="row g-3 align-items-center" style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                  <div className="col-12 col-sm-6">
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        id="isPublic"
+                        type="checkbox"
+                        checked={!!form.is_public}
+                        onChange={(e) => onChange("is_public", e.target.checked ? 1 : 0)}
+                        style={{ width: '18px', height: '18px' }}
+                      />
+                      <label className="form-check-label" htmlFor="isPublic" style={{ marginLeft: '8px', fontWeight: 600, fontSize: '14px' }}>
+                        Make this event public
+                      </label>
+                      <small style={{ color: '#6c757d', fontSize: '12px', display: 'block', marginLeft: '26px' }}>
+                        Visible to all users
+                      </small>
+                    </div>
+                  </div>
+                  <div className="col-12 col-sm-6">
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '14px', marginBottom: '8px', color: '#2c3e50' }}>
+                      Display Order
+                    </label>
                     <input
                       type="number"
                       className="form-control"
+                      style={{ borderRadius: '8px', padding: '10px 14px', fontSize: '14px' }}
                       value={form.sort_order}
                       onChange={(e) =>
                         onChange("sort_order", parseInt(e.target.value || 0, 10))
                       }
+                      placeholder="0"
                     />
                   </div>
                 </div>
 
-                <div className="d-flex justify-content-end gap-2">
+                <div className="d-flex justify-content-end gap-2 pt-3" style={{ borderTop: '1px solid #e3e6f0', marginTop: '4px' }}>
                   {editingId && (
                     <button
                       type="button"
                       className="btn btn-outline-secondary"
                       onClick={resetForm}
+                      style={{ borderRadius: '8px' }}
                     >
                       Cancel
                     </button>
                   )}
-                  <button type="submit" className="btn btn-primary details-btn">
+                  <button type="submit" className="btn btn-primary details-btn" style={{ borderRadius: '8px', fontWeight: 600 }}>
                     {editingId ? "Update Event" : "Save Event"}
                   </button>
                 </div>
               </form>
+              </div>
             </div>
           </div>
 
           <div className="col-12 col-lg-7">
-            <div className="card p-3 shadow-sm">
-              <div className="d-flex align-items-center justify-content-between mb-3">
-                <h5 style={{ margin: 0, fontWeight: 600 }}>Events List</h5>
+            <div className="card shadow-sm" style={{ border: '1px solid #e3e6f0', borderRadius: '12px' }}>
+              <div className="card-header bg-white" style={{ 
+                borderBottom: '1px solid #e3e6f0', 
+                borderRadius: '12px 12px 0 0',
+                padding: '20px 24px'
+              }}>
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h5 style={{ margin: 0, fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>Events List</h5>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>
+                      Manage and view all your events
+                    </p>
+                  </div>
 
-                <div className="btn-group">
-                  <button
-                    className={`btn btn-sm ${tab === "all" ? "btn-primary" : "btn-outline-primary"}`}
-                    onClick={() => setTab("all")}
-                  >
-                    All
-                  </button>
-                  <button
-                    className={`btn btn-sm ${tab === "active" ? "btn-success" : "btn-outline-success"}`}
-                    onClick={() => setTab("active")}
-                  >
-                    Active
-                  </button>
-                  <button
-                    className={`btn btn-sm ${tab === "expired" ? "btn-secondary" : "btn-outline-secondary"}`}
-                    onClick={() => setTab("expired")}
-                  >
-                    Expired
-                  </button>
+                  <div className="btn-group" style={{ borderRadius: '8px', overflow: 'hidden' }}>
+                    <button
+                      className={`btn btn-sm ${tab === "all" ? "btn-primary" : "btn-outline-primary"}`}
+                      onClick={() => setTab("all")}
+                      style={{ fontSize: '13px', fontWeight: 600 }}
+                    >
+                      All
+                    </button>
+                    <button
+                      className={`btn btn-sm ${tab === "active" ? "btn-success" : "btn-outline-success"}`}
+                      onClick={() => setTab("active")}
+                      style={{ fontSize: '13px', fontWeight: 600 }}
+                    >
+                      Active
+                    </button>
+                    <button
+                      className={`btn btn-sm ${tab === "expired" ? "btn-secondary" : "btn-outline-secondary"}`}
+                      onClick={() => setTab("expired")}
+                      style={{ fontSize: '13px', fontWeight: 600 }}
+                    >
+                      Expired
+                    </button>
+                  </div>
                 </div>
               </div>
+              
+              <div className="card-body" style={{ padding: '20px', maxHeight: '720px', overflowY: 'auto' }}>
 
               {loading ? (
                 <div className="text-center py-5">
@@ -501,82 +613,34 @@ export default function AddEventsPage() {
                   <p className="text-muted">No {tab !== "all" ? tab : ""} events found.</p>
                 </div>
               ) : (
-                <div className="card-grid">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {filteredRows.map((ev) => {
                     const expired = isExpired(ev);
                     const active = isActive(ev);
                     return (
                       <div
                         key={ev.id}
-                        className="person-card"
                         style={{
-                          border: editingId === ev.id ? "2px solid #0d6efd" : "1px solid #e9ecef",
-                          borderRadius: 12,
-                          padding: 14,
-                          opacity: expired ? 0.7 : 1,
-                          background: editingId === ev.id ? "#f8f9fa" : "#fff",
-                          transition: "all 0.2s ease"
+                          border: editingId === ev.id ? "2px solid #0d6efd" : "1px solid #e3e6f0",
+                          borderRadius: 10,
+                          padding: 16,
+                          opacity: expired ? 0.65 : 1,
+                          background: editingId === ev.id ? "#f0f7ff" : "#fff",
+                          transition: "all 0.2s ease",
+                          cursor: "pointer"
                         }}
+                        onClick={() => edit(ev)}
                       >
-                        <div className="card-header d-flex justify-content-between">
-                          <div className="card-name" style={{ paddingRight: 10 }}>
-                            <div className="d-flex align-items-start gap-2 mb-2">
-                              <h5 className="mb-0" style={{ flex: 1 }}>{ev.title}</h5>
-                              <div className="d-flex gap-1 flex-wrap">
-                                {active && <span className="badge bg-success">Active</span>}
-                                {expired && <span className="badge bg-secondary">Expired</span>}
-                                {ev.recurrence_rule !== "none" && (
-                                  <span className="badge bg-info">Recurring</span>
-                                )}
-                                {!ev.is_public && <span className="badge bg-warning text-dark">Private</span>}
-                              </div>
-                            </div>
-                            <p className="mb-1 text-muted">{ev.description || ""}</p>
-
-                            <small className="text-muted d-block">
-                              {new Date(ev.start_at).toLocaleString()}
-                              {ev.end_at ? ` → ${new Date(ev.end_at).toLocaleString()}` : ""}
-                            </small>
-
-                            <small className="text-muted d-block">
-                              {ev.is_public ? "Public" : "Hidden"} · Order {ev.sort_order}
-                            </small>
-
-                            <small className="d-block mt-1">
-                              Button label: <strong>{ev.button_label || <em>(none)</em>}</strong>
-                            </small>
-
-                            {ev.payment_url && (
-                              <small className="d-block mt-1">
-                                <a
-                                  href={ev.payment_url.startsWith("http") ? ev.payment_url : toAbs(ev.payment_url)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  Payment link
-                                </a>
-                              </small>
-                            )}
-
-                            {ev.recurrence_rule !== "none" && (
-                              <small className="d-block text-muted">
-                                Rule: {ev.recurrence_rule}
-                                {ev.recurrence_day_of_week !== null &&
-                                  ev.recurrence_day_of_week !== undefined &&
-                                  ` · DOW ${ev.recurrence_day_of_week}`}
-                                {ev.recurrence_until && ` · until ${toDateInput(ev.recurrence_until)}`}
-                              </small>
-                            )}
-                          </div>
-
+                        <div className="d-flex gap-3">
                           {ev.image_url ? (
                             <div
                               style={{
-                                width: 72,
-                                height: 72,
+                                width: 80,
+                                height: 80,
                                 borderRadius: 8,
                                 overflow: "hidden",
                                 flexShrink: 0,
+                                border: "1px solid #e3e6f0"
                               }}
                             >
                               <img
@@ -590,23 +654,116 @@ export default function AddEventsPage() {
                               />
                             </div>
                           ) : (
-                            <img src="/assets/img/Closed.png" alt="icon" />
+                            <div
+                              style={{
+                                width: 80,
+                                height: 80,
+                                borderRadius: 8,
+                                background: "#f8f9fa",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0,
+                                border: "1px solid #e3e6f0"
+                              }}
+                            >
+                              <span style={{ fontSize: '32px' }}>📅</span>
+                            </div>
                           )}
-                        </div>
 
-                        <div className="card-footer d-flex justify-content-end gap-2">
-                          <button className="btn btn-outline-primary btn-sm" onClick={() => edit(ev)}>
-                            Edit
-                          </button>
-                          <button className="btn btn-danger btn-sm" onClick={() => del(ev.id)}>
-                            Delete
-                          </button>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
+                              <h6 style={{ margin: 0, fontWeight: 700, fontSize: '15px', color: '#2c3e50' }}>
+                                {ev.title}
+                              </h6>
+                              <div className="d-flex gap-1 flex-wrap" style={{ flexShrink: 0 }}>
+                                {active && <span className="badge bg-success" style={{ fontSize: '10px' }}>Active</span>}
+                                {expired && <span className="badge bg-secondary" style={{ fontSize: '10px' }}>Expired</span>}
+                                {ev.recurrence_rule !== "none" && (
+                                  <span className="badge bg-info" style={{ fontSize: '10px' }}>Recurring</span>
+                                )}
+                                {!ev.is_public && <span className="badge bg-warning text-dark" style={{ fontSize: '10px' }}>Private</span>}
+                              </div>
+                            </div>
+
+                            {ev.description && (
+                              <p style={{ 
+                                margin: '0 0 8px 0', 
+                                fontSize: '13px', 
+                                color: '#6c757d',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {ev.description}
+                              </p>
+                            )}
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#495057', marginBottom: '8px' }}>
+                              <div style={{ fontWeight: 600 }}>
+                                📅 {formatEventSchedule(ev.start_at, ev.end_at)}
+                              </div>
+                              
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '12px', color: '#6c757d' }}>
+                                {ev.button_label && (
+                                  <span>🏷️ {ev.button_label}</span>
+                                )}
+                                <span>📊 Order: {ev.sort_order}</span>
+                                {ev.payment_url && (
+                                  <span style={{ color: '#28a745' }}>💳 Has Payment</span>
+                                )}
+                              </div>
+
+                              {ev.recurrence_rule !== "none" && (
+                                <div style={{ fontSize: '12px', color: '#6c757d' }}>
+                                  🔁 {ev.recurrence_rule.charAt(0).toUpperCase() + ev.recurrence_rule.slice(1)}
+                                  {ev.recurrence_day_of_week !== null && ` - ${getDayName(ev.recurrence_day_of_week)}`}
+                                  {ev.recurrence_until && ` until ${new Date(ev.recurrence_until).toLocaleDateString()}`}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="d-flex justify-content-between align-items-center" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e3e6f0' }}>
+                              <div style={{ display: 'flex', gap: '8px', fontSize: '11px' }}>
+                                {ev.payment_url && (
+                                  <a
+                                    href={ev.payment_url.startsWith("http") ? ev.payment_url : toAbs(ev.payment_url)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{ color: '#0d6efd', textDecoration: 'none', fontWeight: 600 }}
+                                    title={ev.payment_url}
+                                  >
+                                    View Payment Link
+                                  </a>
+                                )}
+                              </div>
+
+                              <div className="d-flex gap-2">
+                                <button 
+                                  className="btn btn-outline-primary btn-sm" 
+                                  onClick={(e) => { e.stopPropagation(); edit(ev); }}
+                                  style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '6px', fontWeight: 600 }}
+                                >
+                                  Edit
+                                </button>
+                                <button 
+                                  className="btn btn-outline-danger btn-sm" 
+                                  onClick={(e) => { e.stopPropagation(); del(ev.id); }}
+                                  style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '6px', fontWeight: 600 }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>

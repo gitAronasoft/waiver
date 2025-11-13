@@ -68,6 +68,27 @@ function fmt(x){
   };
 }
 
+function formatTimeRange(start, end) {
+  const s = dt(start);
+  if (!s) return "Time TBD";
+  
+  const pad = (n) => String(n).padStart(2, "0");
+  const formatTime = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const formatDate = (d) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+  
+  const e = dt(end);
+  if (!e) {
+    return formatTime(s);
+  }
+  
+  const sameDay = s.toDateString() === e.toDateString();
+  if (sameDay) {
+    return `${formatTime(s)} - ${formatTime(e)}`;
+  }
+  
+  return `${formatDate(s)} ${formatTime(s)} → ${formatDate(e)} ${formatTime(e)}`;
+}
+
 export default function EventsShowcase(){
   const navigate = useNavigate();
 
@@ -273,8 +294,8 @@ export default function EventsShowcase(){
 }
 
 function Card({ ev, width, isActive, onClick, onBuy, isMobile }){
-  const { day:sDay, time:sTime } = fmt(ev.start_at);
-  const { day:eDay, time:eTime } = fmt(ev.end_at);
+  const { day:sDay } = fmt(ev.start_at);
+  const timeRange = formatTimeRange(ev.start_at, ev.end_at);
 
   const scale = isActive ? 1 : (isMobile ? 0.92 : 0.95);
   const opacity = isActive ? 1 : 0.85;
@@ -291,7 +312,7 @@ function Card({ ev, width, isActive, onClick, onBuy, isMobile }){
         background:"#fff",
         border: isActive ? "2px solid #007AFF" : "1px solid #e9e9e9",
         borderRadius:16,
-        padding:14,
+        padding:0,
         display:"flex", flexDirection:"column",
         boxShadow: isActive ? "0 12px 28px rgba(0,0,0,.14)" : "0 8px 18px rgba(0,0,0,.08)",
         transform:`scale(${scale})`,
@@ -299,9 +320,10 @@ function Card({ ev, width, isActive, onClick, onBuy, isMobile }){
         zIndex,
         transition:"transform 260ms ease, opacity 260ms ease, box-shadow 260ms ease, border 260ms ease",
         cursor:"pointer",
+        overflow:"hidden"
       }}
     >
-      <div style={{ width:"100%", aspectRatio:"1 / 1", borderRadius:10, overflow:"hidden", background:"#000" }}>
+      <div style={{ width:"100%", height:"160px", borderRadius:"16px 16px 0 0", overflow:"hidden", background:"#000", flexShrink:0 }}>
         {ev.image ? (
           <img
             src={ev.image}
@@ -310,43 +332,87 @@ function Card({ ev, width, isActive, onClick, onBuy, isMobile }){
             onError={(e)=> (e.currentTarget.style.display="none")}
           />
         ) : (
-          <div style={{ width:"100%", height:"100%", display:"grid", placeItems:"center", color:"#aaa", background:"#111" }}>
-            No image
+          <div style={{ width:"100%", height:"100%", display:"grid", placeItems:"center", color:"#aaa", background:"#2c3e50" }}>
+            <span style={{ fontSize:"48px" }}>📅</span>
           </div>
         )}
       </div>
 
-      <h4 style={{ marginTop:12, marginBottom:6, fontWeight:700, fontSize:"1.2rem" }}>{ev.title}</h4>
-      {ev.description && <p style={{ margin:0, color:"#444", fontSize:"14px" }}>{ev.description}</p>}
+      <div style={{ padding:"18px 16px", display:"flex", flexDirection:"column", gap:"10px", flex:1 }}>
+        <h4 style={{ margin:0, fontWeight:700, fontSize:"1.3rem", lineHeight:"1.3", color:"#2c3e50" }}>{ev.title}</h4>
+        
+        {ev.description && (
+          <p style={{ 
+            margin:0, 
+            color:"#6c757d", 
+            fontSize:"14px", 
+            lineHeight:"1.5",
+            overflow: "hidden",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical"
+          }}>
+            {ev.description}
+          </p>
+        )}
 
-      <div style={{ marginTop:10, fontSize:"14px" }}>
-        {sDay && <div style={{ fontWeight:700 }}>{sDay}{sTime ? ` - ${sTime}` : ""}</div>}
-        {eDay && <div style={{ fontWeight:700 }}>{eDay}{eTime ? ` - ${eTime}` : ""}</div>}
+        <div style={{ 
+          marginTop:"auto", 
+          paddingTop:"8px",
+          borderTop:"1px solid #e9ecef"
+        }}>
+          {sDay && (
+            <div style={{ 
+              fontSize:"13px", 
+              color:"#2c3e50",
+              fontWeight:600,
+              marginBottom:"6px",
+              display:"flex",
+              alignItems:"center",
+              gap:"6px"
+            }}>
+              <span>📅</span>
+              <span>{sDay}</span>
+            </div>
+          )}
+          <div style={{ 
+            fontSize:"13px", 
+            color:"#6c757d",
+            fontWeight: 600,
+            display:"flex",
+            alignItems:"center",
+            gap:"6px"
+          }}>
+            <span>🕐</span>
+            <span>{timeRange}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={(e)=>{
+            e.stopPropagation();
+            if (hasLink) onBuy(ev.link_url);
+          }}
+          disabled={!hasLink}
+          aria-disabled={!hasLink}
+          style={{
+            marginTop:12,
+            background: hasLink ? "#FFD400" : "#E5E5E5",
+            color: hasLink ? "#000" : "#666",
+            border:"none",
+            borderRadius:10,
+            padding:"14px 16px",
+            fontWeight:700,
+            fontSize:"15px",
+            cursor: hasLink ? "pointer" : "not-allowed",
+            opacity: hasLink ? 1 : 0.9,
+            transition:"all 0.2s ease"
+          }}
+        >
+          {btnLabel}
+        </button>
       </div>
-
-      <button
-        type="button"
-        onClick={(e)=>{
-          e.stopPropagation();
-          if (hasLink) onBuy(ev.link_url);
-        }}
-        disabled={!hasLink}
-        aria-disabled={!hasLink}
-        style={{
-          marginTop:14,
-          background: hasLink ? "#FFD400" : "#E5E5E5",
-          color: hasLink ? "#000" : "#666",
-          border:"none",
-          borderRadius:12,
-          padding:"12px 14px",
-          fontWeight:700,
-          fontSize:"15px",
-          cursor: hasLink ? "pointer" : "not-allowed",
-          opacity: hasLink ? 1 : 0.9
-        }}
-      >
-        {btnLabel}
-      </button>
     </article>
   );
 }

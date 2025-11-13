@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from '../config';
+import UserHeader from '../components/UserHeader';
 
 const GAP = 16;
 const CARD_W_MOBILE = 280;
@@ -19,24 +20,43 @@ function absUrl(maybe, base) {
 
 function dt(x){ const d=new Date(x); return isNaN(d)?null:d; }
 
-function isSameDay(a,b){
-  return a.getFullYear()===b.getFullYear()
-      && a.getMonth()===b.getMonth()
-      && a.getDate()===b.getDate();
-}
-
 function showUpcomingOrActive(s, e, now=new Date()){
   const S = dt(s), E = dt(e);
   if (!S && !E) return false;
-  if (E) return E >= now;
-  if (S) return S >= now || now >= S;
+  
+  if (E) {
+    return E >= now;
+  }
+  
+  if (S) {
+    return S >= now;
+  }
+  
   return false;
 }
 
 function shouldShow(ev, now=new Date()){
   const recurring = (ev.recurrence_rule === "weekly");
-  const S = dt(ev.start_at);
-  if (recurring) return !!(S && isSameDay(S, now));
+  if (recurring) {
+    const dayOfWeek = ev.recurrence_day_of_week;
+    if (dayOfWeek === null || dayOfWeek === undefined) return false;
+    
+    const todayDOW = now.getDay();
+    if (todayDOW !== parseInt(dayOfWeek, 10)) return false;
+    
+    const S = dt(ev.start_at);
+    if (S && now < S) return false;
+    
+    if (ev.recurrence_until) {
+      const until = dt(ev.recurrence_until);
+      if (until) {
+        until.setHours(23, 59, 59, 999);
+        if (now > until) return false;
+      }
+    }
+    
+    return true;
+  }
   return showUpcomingOrActive(ev.start_at, ev.end_at, now);
 }
 
@@ -108,17 +128,12 @@ export default function EventsShowcase(){
   const prev = ()=> setCurrent(i => events.length ? (i===0? events.length-1 : i-1) : 0);
   const next = ()=> setCurrent(i => events.length ? (i===events.length-1? 0 : i+1) : 0);
 
-  const computeOffset = () => {
-    const vp = viewportRef.current;
-    if (!vp) return 0;
-    const CARD = isMobile ? CARD_W_MOBILE : CARD_W_DESKTOP;
-    return current * (CARD + GAP) - (vp.clientWidth/2 - CARD/2);
-  };
-
   useEffect(()=>{
     const track = trackRef.current;
-    if(!track) return;
-    const offset = computeOffset();
+    const vp = viewportRef.current;
+    if(!track || !vp) return;
+    const CARD = isMobile ? CARD_W_MOBILE : CARD_W_DESKTOP;
+    const offset = current * (CARD + GAP) - (vp.clientWidth/2 - CARD/2);
     track.style.transform = `translateX(${-offset}px)`;
   },[current, isMobile, events.length]);
 
@@ -135,106 +150,125 @@ export default function EventsShowcase(){
   const CARD = isMobile ? CARD_W_MOBILE : CARD_W_DESKTOP;
 
   return (
-    <div style={{ background:"#fff", minHeight:"100vh", paddingBottom:84 }}>
-      <div style={{ maxWidth:1100, margin:"0 auto", padding:"16px 16px 0" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <button onClick={()=>navigate(-1)} aria-label="Back"
-                  style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", padding:6 }}>
-            ←
-          </button>
-          <span style={{ fontWeight:600 }}>BACK</span>
-        </div>
-        <div style={{ textAlign:"center", marginTop:8 }}>
-          <img src="/assets/img/logo.png" alt="logo" style={{ height:56, objectFit:"contain" }}/>
-          <h2 style={{ marginTop:10, fontWeight:800 }}>Upcoming Event</h2>
-        </div>
-      </div>
-
-      <div style={{ maxWidth:1100, margin:"0 auto", padding:"12px 16px 0", position:"relative" }}>
-        {loading ? (
-          <p style={{ textAlign:"center", color:"#666" }}>Loading…</p>
-        ) : events.length===0 ? (
-          <p style={{ textAlign:"center", color:"#666" }}>No active events.</p>
-        ) : (
-          <>
-            {events.length>1 && (
-              <>
-                <button aria-label="previous" onClick={prev} style={arrowStyle("left")}>‹</button>
-                <button aria-label="next" onClick={next} style={arrowStyle("right")}>›</button>
-              </>
-            )}
-
-            <div
-              ref={viewportRef}
-              style={{
-                width:"100%",
-                maxWidth: isMobile ? 480 : 1100,
-                margin:"0 auto",
-                overflow:"hidden",
-                position:"relative",
-              }}
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
-            >
-              <div
-                ref={trackRef}
-                style={{
-                  display:"flex",
-                  gap:GAP,
-                  width: events.length * (CARD + GAP),
-                  transition:"transform 380ms ease",
-                  padding:"0 0 14px",
-                }}
-              >
-                {events.map((ev, idx)=>(
-                  <Card
-                    key={ev.id ?? idx}
-                    ev={ev}
-                    width={CARD}
-                    isActive={idx===current}
-                    onClick={()=>setCurrent(idx)}
-                    onBuy={handleBuy}
-                    isMobile={isMobile}
-                  />
-                ))}
-              </div>
+    <>
+      <UserHeader />
+      <div className="container-fluid">
+        <div className="container text-center">
+          <div className="row">
+            <div className="col-12">
+              <h5 className="h5-heading" style={{ fontSize: "1.8rem", marginTop: "20px", marginBottom: "10px" }}>
+                Upcoming Events
+              </h5>
+              <p style={{ color: "#666", fontSize: "16px", marginBottom: "30px" }}>
+                Check out what's happening and register for events
+              </p>
             </div>
+          </div>
 
-            {events.length>1 && (
-              <div style={{ display:"flex", justifyContent:"center", gap:6, marginTop:8 }}>
-                {events.map((_,i)=>(
-                  <span key={i} onClick={()=>setCurrent(i)}
-                        style={{
-                          width:8, height:8, borderRadius:"50%",
-                          background: i===current ? "#333":"#ccc",
-                          cursor:"pointer"
-                        }}/>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+          <div className="row">
+            <div className="col-12 col-md-10 col-lg-10 mx-auto" style={{ position: "relative", minHeight: "400px" }}>
+              {loading ? (
+                <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                  <div className="spinner-border text-primary" style={{ width: "3rem", height: "3rem" }} role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  <p style={{ color: "#666", marginTop: "20px", fontSize: "16px" }}>Loading events...</p>
+                </div>
+              ) : events.length===0 ? (
+                <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                  <div style={{ fontSize: "64px", marginBottom: "20px" }}>📅</div>
+                  <h5 className="h5-heading" style={{ marginBottom: "15px" }}>No Active Events</h5>
+                  <p style={{ color: "#666", fontSize: "15px", maxWidth: "500px", margin: "0 auto" }}>
+                    There are no events scheduled at this time. Check back soon for upcoming events and activities!
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {events.length>1 && (
+                    <>
+                      <button aria-label="previous" onClick={prev} style={arrowStyle("left")}>‹</button>
+                      <button aria-label="next" onClick={next} style={arrowStyle("right")}>›</button>
+                    </>
+                  )}
 
-      <div style={{
-        position:"fixed", left:0, right:0, bottom:0,
-        background:"linear-gradient(transparent, #fff 20%)",
-        padding:"12px 16px 16px"
-      }}>
-        <div style={{ maxWidth:1100, margin:"0 auto" }}>
-          <button type="button" onClick={handleComplete}
-                  style={{
-                    width:"100%", background:"#1E66FF", color:"#fff",
-                    border:"none", borderRadius:12, padding:"14px 16px",
-                    fontWeight:800, fontSize:16, cursor:"pointer",
-                    boxShadow:"0 6px 16px rgba(30,102,255,.3)"
-                  }}>
-            Complete
-          </button>
+                  <div
+                    ref={viewportRef}
+                    style={{
+                      width:"100%",
+                      maxWidth: isMobile ? 480 : 1100,
+                      margin:"0 auto",
+                      overflow:"hidden",
+                      position:"relative",
+                    }}
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                  >
+                    <div
+                      ref={trackRef}
+                      style={{
+                        display:"flex",
+                        gap:GAP,
+                        width: events.length * (CARD + GAP),
+                        transition:"transform 380ms ease",
+                        padding:"0 0 14px",
+                      }}
+                    >
+                      {events.map((ev, idx)=>(
+                        <Card
+                          key={ev.id ?? idx}
+                          ev={ev}
+                          width={CARD}
+                          isActive={idx===current}
+                          onClick={()=>setCurrent(idx)}
+                          onBuy={handleBuy}
+                          isMobile={isMobile}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {events.length>1 && (
+                    <div style={{ display:"flex", justifyContent:"center", gap:8, marginTop:20 }}>
+                      {events.map((_,i)=>(
+                        <button
+                          key={i}
+                          onClick={()=>setCurrent(i)}
+                          aria-label={`Go to event ${i + 1}`}
+                          style={{
+                            width:i===current?24:10,
+                            height:10,
+                            borderRadius:5,
+                            background: i===current ? "#007AFF":"#dee2e6",
+                            border:"none",
+                            cursor:"pointer",
+                            transition:"all 0.3s ease",
+                            padding:0
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="row mt-4 mb-4">
+            <div className="col-12 col-md-6 col-lg-4 mx-auto">
+              <button 
+                type="button" 
+                onClick={handleComplete}
+                className="confirm-btn"
+                style={{ width: "100%", fontSize: "17px" }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -255,7 +289,7 @@ function Card({ ev, width, isActive, onClick, onBuy, isMobile }){
       style={{
         width, minWidth:width, maxWidth:width,
         background:"#fff",
-        border: isActive ? "2px solid #0d6efd" : "1px solid #e9e9e9",
+        border: isActive ? "2px solid #007AFF" : "1px solid #e9e9e9",
         borderRadius:16,
         padding:14,
         display:"flex", flexDirection:"column",
@@ -282,10 +316,10 @@ function Card({ ev, width, isActive, onClick, onBuy, isMobile }){
         )}
       </div>
 
-      <h4 style={{ marginTop:12, marginBottom:6, fontWeight:800 }}>{ev.title}</h4>
-      {ev.description && <p style={{ margin:0, color:"#444" }}>{ev.description}</p>}
+      <h4 style={{ marginTop:12, marginBottom:6, fontWeight:700, fontSize:"1.2rem" }}>{ev.title}</h4>
+      {ev.description && <p style={{ margin:0, color:"#444", fontSize:"14px" }}>{ev.description}</p>}
 
-      <div style={{ marginTop:10 }}>
+      <div style={{ marginTop:10, fontSize:"14px" }}>
         {sDay && <div style={{ fontWeight:700 }}>{sDay}{sTime ? ` - ${sTime}` : ""}</div>}
         {eDay && <div style={{ fontWeight:700 }}>{eDay}{eTime ? ` - ${eTime}` : ""}</div>}
       </div>
@@ -305,7 +339,8 @@ function Card({ ev, width, isActive, onClick, onBuy, isMobile }){
           border:"none",
           borderRadius:12,
           padding:"12px 14px",
-          fontWeight:800,
+          fontWeight:700,
+          fontSize:"15px",
           cursor: hasLink ? "pointer" : "not-allowed",
           opacity: hasLink ? 1 : 0.9
         }}

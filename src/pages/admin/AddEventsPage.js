@@ -222,19 +222,38 @@ export default function AddEventsPage() {
   return (
     <>
       <Header />
-      <div className="container my-4">
+      <div className="container">
+        <div className="row">
+          <div className="col-12 mx-auto my-5">
+            <div className="text-center mb-4">
+              <h5 className="h5-heading">Events Management</h5>
+              <p style={{ color: "#6c757d", margin: 0 }}>Create, edit, and manage your facility events</p>
+            </div>
+
         <div className="row g-4">
           <div className="col-12 col-lg-5">
-            <div className="card p-3">
-              <div className="d-flex align-items-center justify-content-between">
-                <h5 className="mb-3">{editingId ? "Edit Event" : "Add Event"}</h5>
+            <div className="card p-3 shadow-sm">
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <h5 style={{ margin: 0, fontWeight: 600 }}>
+                  {editingId ? (
+                    <span>
+                      <span className="badge bg-warning text-dark me-2">Editing</span>
+                      Update Event
+                    </span>
+                  ) : (
+                    <span>
+                      <span className="badge bg-success me-2">New</span>
+                      Add Event
+                    </span>
+                  )}
+                </h5>
                 {editingId && (
                   <button
                     type="button"
                     className="btn btn-outline-secondary btn-sm"
                     onClick={resetForm}
                   >
-                    Cancel
+                    ✕ Cancel
                   </button>
                 )}
               </div>
@@ -443,9 +462,9 @@ export default function AddEventsPage() {
           </div>
 
           <div className="col-12 col-lg-7">
-            <div className="card p-3">
-              <div className="d-flex align-items-center justify-content-between">
-                <h5 className="mb-3">Events List</h5>
+            <div className="card p-3 shadow-sm">
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <h5 style={{ margin: 0, fontWeight: 600 }}>Events List</h5>
 
                 <div className="btn-group">
                   <button
@@ -455,13 +474,13 @@ export default function AddEventsPage() {
                     All
                   </button>
                   <button
-                    className={`btn btn-sm ${tab === "active" ? "btn-primary" : "btn-outline-primary"}`}
+                    className={`btn btn-sm ${tab === "active" ? "btn-success" : "btn-outline-success"}`}
                     onClick={() => setTab("active")}
                   >
                     Active
                   </button>
                   <button
-                    className={`btn btn-sm ${tab === "expired" ? "btn-primary" : "btn-outline-primary"}`}
+                    className={`btn btn-sm ${tab === "expired" ? "btn-secondary" : "btn-outline-secondary"}`}
                     onClick={() => setTab("expired")}
                   >
                     Expired
@@ -470,33 +489,48 @@ export default function AddEventsPage() {
               </div>
 
               {loading ? (
-                <p className="text-muted">Loading…</p>
+                <div className="text-center py-5">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                  <p className="text-muted mt-2">Loading events...</p>
+                </div>
               ) : filteredRows.length === 0 ? (
-                <p className="text-muted">No events.</p>
+                <div className="text-center py-5">
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>📅</div>
+                  <p className="text-muted">No {tab !== "all" ? tab : ""} events found.</p>
+                </div>
               ) : (
                 <div className="card-grid">
                   {filteredRows.map((ev) => {
                     const expired = isExpired(ev);
+                    const active = isActive(ev);
                     return (
                       <div
                         key={ev.id}
                         className="person-card"
                         style={{
-                          border: editingId === ev.id ? "2px solid #0d6efd" : "1px solid #eaeaea",
-                          borderRadius: 10,
-                          padding: 10,
-                          opacity: expired ? 0.65 : 1,
+                          border: editingId === ev.id ? "2px solid #0d6efd" : "1px solid #e9ecef",
+                          borderRadius: 12,
+                          padding: 14,
+                          opacity: expired ? 0.7 : 1,
+                          background: editingId === ev.id ? "#f8f9fa" : "#fff",
+                          transition: "all 0.2s ease"
                         }}
                       >
                         <div className="card-header d-flex justify-content-between">
                           <div className="card-name" style={{ paddingRight: 10 }}>
-                            <h5 className="mb-1">
-                              {ev.title}{" "}
-                              {ev.recurrence_rule !== "none" && (
-                                <span className="badge text-bg-info ms-1">Recurring</span>
-                              )}
-                              {expired && <span className="badge text-bg-secondary ms-1">Expired</span>}
-                            </h5>
+                            <div className="d-flex align-items-start gap-2 mb-2">
+                              <h5 className="mb-0" style={{ flex: 1 }}>{ev.title}</h5>
+                              <div className="d-flex gap-1 flex-wrap">
+                                {active && <span className="badge bg-success">Active</span>}
+                                {expired && <span className="badge bg-secondary">Expired</span>}
+                                {ev.recurrence_rule !== "none" && (
+                                  <span className="badge bg-info">Recurring</span>
+                                )}
+                                {!ev.is_public && <span className="badge bg-warning text-dark">Private</span>}
+                              </div>
+                            </div>
                             <p className="mb-1 text-muted">{ev.description || ""}</p>
 
                             <small className="text-muted d-block">
@@ -576,7 +610,8 @@ export default function AddEventsPage() {
             </div>
           </div>
         </div>
-        <div style={{ height: 40 }} />
+          </div>
+        </div>
       </div>
     </>
   );

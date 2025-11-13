@@ -141,6 +141,12 @@ function Header() {
               label="Feedback"
               isActive={currentPath === "/admin/feedback-list"}
             />
+            <NavItem
+              to="/admin/events"
+              icon="/assets/img/Icon.png"
+              label="Events"
+              isActive={currentPath === "/admin/events"}
+            />
           </ul>
 
           {/* Right Side Icons */} 

@@ -26,6 +26,8 @@ const AddStaff = lazy(() => import("./pages/admin/AddStaff"));
 const UpdateStaff = lazy(() => import("./pages/admin/UpdateStaff"));
 const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
 const AdminFeedbackPage = lazy(() => import("./pages/admin/AdminFeedbackPage"));
+const AddEventsPage = lazy(() => import("./pages/admin/AddEventsPage"));
+const EventsShowcase = lazy(() => import("./pages/EventsShowcase"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function AppContent() {
@@ -130,7 +132,14 @@ function AppContent() {
           }
         />
 
-
+         <Route
+          path="admin/events"
+          element={
+            <AdminPrivateRoute>
+              <AddEventsPage />
+            </AdminPrivateRoute>
+          }
+        />
 
         {/* Public User Routes */}
         <Route path="/" element={<WelcomePage />} />
@@ -144,6 +153,7 @@ function AppContent() {
         <Route path="/rate/:id" element={<StarRating />} />
         {/* <Route path="/feedback/:id" element={<Feedback />} /> */}
         <Route path="/feedback" element={<Feedback />} />
+        <Route path="/events" element={<EventsShowcase />} />
         
         {/* Catch-all route for 404 - must be last */}
         <Route path="*" element={<NotFound />} />

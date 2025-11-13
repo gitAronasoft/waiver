@@ -10,6 +10,8 @@ const authRoutes = require('./routes/authRoutes');
 const staffRoutes = require('./routes/staffRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
 const ratingRoutes = require('./routes/ratingRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+const { initializeEventsTable } = require('./controllers/eventController');
 
 // Initialize rating email/SMS scheduler
 require('./ratingEmailScheduler');
@@ -61,6 +63,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/rating', ratingRoutes);
+app.use('/api/events', eventRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -139,9 +142,15 @@ process.on('SIGTERM', () => {
   });
 });
 
-// Start server
-const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`⏰ Started at: ${new Date().toISOString()}`);
+// Initialize events table before starting server
+initializeEventsTable().then(() => {
+  // Start server
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`⏰ Started at: ${new Date().toISOString()}`);
+  });
+}).catch(err => {
+  console.error('Failed to initialize events table:', err);
+  process.exit(1);
 });

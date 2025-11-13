@@ -71,7 +71,7 @@ export default function AddEventsPage() {
     return false;
   };
 
-  const isActive = (ev) => !isExpired(ev) && ev.is_public;
+  const isActive = (ev) => !isExpired(ev) && !!ev.is_public;
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -254,31 +254,41 @@ export default function AddEventsPage() {
 
         <div className="row g-4">
           <div className="col-12 col-lg-5">
-            <div className="card shadow-sm" style={{ border: '1px solid #e3e6f0', borderRadius: '12px' }}>
+            <div className="card shadow-sm" style={{ border: '1px solid #e3e6f0', borderRadius: '12px', position: 'relative' }}>
+              {editingId && (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={resetForm}
+                  style={{ 
+                    position: 'absolute',
+                    top: '20px',
+                    right: '24px',
+                    zIndex: 10,
+                    borderRadius: '8px',
+                    padding: '6px 16px',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <i className="bi bi-x-lg"></i> Cancel
+                </button>
+              )}
               <div className="card-header bg-white" style={{ 
                 borderBottom: '1px solid #e3e6f0', 
                 borderRadius: '12px 12px 0 0',
                 padding: '20px 24px'
               }}>
-                <div className="d-flex align-items-center justify-content-between">
-                  <div>
-                    <h5 style={{ margin: 0, fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>
-                      {editingId ? "Edit Event" : "Add Event"}
-                    </h5>
-                    <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>
-                      {editingId ? "Update event details below" : "Fill in the form to create a new event"}
-                    </p>
-                  </div>
-                  {editingId && (
-                    <button
-                      type="button"
-                      className="btn btn-light btn-sm"
-                      onClick={resetForm}
-                      style={{ borderRadius: '8px' }}
-                    >
-                      <i className="bi bi-x"></i> Cancel
-                    </button>
-                  )}
+                <div>
+                  <h5 style={{ margin: 0, fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>
+                    {editingId ? "Edit Event" : "Add Event"}
+                  </h5>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>
+                    {editingId ? "Update event details below" : "Fill in the form to create a new event"}
+                  </p>
                 </div>
               </div>
               
@@ -558,43 +568,47 @@ export default function AddEventsPage() {
           </div>
 
           <div className="col-12 col-lg-7">
-            <div className="card shadow-sm" style={{ border: '1px solid #e3e6f0', borderRadius: '12px' }}>
+            <div className="card shadow-sm" style={{ border: '1px solid #e3e6f0', borderRadius: '12px', position: 'relative' }}>
+              <div className="btn-group" style={{ 
+                position: 'absolute',
+                top: '20px',
+                right: '24px',
+                zIndex: 10,
+                borderRadius: '8px', 
+                overflow: 'hidden' 
+              }}>
+                <button
+                  className={`btn btn-sm ${tab === "all" ? "btn-primary" : "btn-outline-primary"}`}
+                  onClick={() => setTab("all")}
+                  style={{ fontSize: '13px', fontWeight: 600 }}
+                >
+                  All
+                </button>
+                <button
+                  className={`btn btn-sm ${tab === "active" ? "btn-success" : "btn-outline-success"}`}
+                  onClick={() => setTab("active")}
+                  style={{ fontSize: '13px', fontWeight: 600 }}
+                >
+                  Active
+                </button>
+                <button
+                  className={`btn btn-sm ${tab === "expired" ? "btn-secondary" : "btn-outline-secondary"}`}
+                  onClick={() => setTab("expired")}
+                  style={{ fontSize: '13px', fontWeight: 600 }}
+                >
+                  Expired
+                </button>
+              </div>
               <div className="card-header bg-white" style={{ 
                 borderBottom: '1px solid #e3e6f0', 
                 borderRadius: '12px 12px 0 0',
                 padding: '20px 24px'
               }}>
-                <div className="d-flex align-items-center justify-content-between">
-                  <div>
-                    <h5 style={{ margin: 0, fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>Events List</h5>
-                    <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>
-                      Manage and view all your events
-                    </p>
-                  </div>
-
-                  <div className="btn-group" style={{ borderRadius: '8px', overflow: 'hidden' }}>
-                    <button
-                      className={`btn btn-sm ${tab === "all" ? "btn-primary" : "btn-outline-primary"}`}
-                      onClick={() => setTab("all")}
-                      style={{ fontSize: '13px', fontWeight: 600 }}
-                    >
-                      All
-                    </button>
-                    <button
-                      className={`btn btn-sm ${tab === "active" ? "btn-success" : "btn-outline-success"}`}
-                      onClick={() => setTab("active")}
-                      style={{ fontSize: '13px', fontWeight: 600 }}
-                    >
-                      Active
-                    </button>
-                    <button
-                      className={`btn btn-sm ${tab === "expired" ? "btn-secondary" : "btn-outline-secondary"}`}
-                      onClick={() => setTab("expired")}
-                      style={{ fontSize: '13px', fontWeight: 600 }}
-                    >
-                      Expired
-                    </button>
-                  </div>
+                <div>
+                  <h5 style={{ margin: 0, fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>Events List</h5>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#6c757d' }}>
+                    Manage and view all your events
+                  </p>
                 </div>
               </div>
               
@@ -708,7 +722,6 @@ export default function AddEventsPage() {
                                 {ev.button_label && (
                                   <span>🏷️ {ev.button_label}</span>
                                 )}
-                                <span>📊 Order: {ev.sort_order}</span>
                                 {ev.payment_url && (
                                   <span style={{ color: '#28a745' }}>💳 Has Payment</span>
                                 )}

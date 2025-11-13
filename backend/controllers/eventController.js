@@ -222,7 +222,7 @@ const createEvent = async (req, res) => {
         description,
         start_at,
         end_at,
-        is_public ? 1 : 0,
+        (is_public === 1 || is_public === '1' || is_public === true) ? 1 : 0,
         Number(sort_order) || 0,
         image_url,
         payment_url,
@@ -273,7 +273,10 @@ const updateEvent = async (req, res) => {
     if (description !== undefined) { updates.push('description = ?'); params.push(description); }
     if (start_at !== undefined) { updates.push('start_at = ?'); params.push(start_at); }
     if (end_at !== undefined) { updates.push('end_at = ?'); params.push(end_at); }
-    if (is_public !== undefined) { updates.push('is_public = ?'); params.push(is_public ? 1 : 0); }
+    if (is_public !== undefined) { 
+      updates.push('is_public = ?'); 
+      params.push((is_public === 1 || is_public === '1' || is_public === true) ? 1 : 0); 
+    }
     if (sort_order !== undefined) { updates.push('sort_order = ?'); params.push(Number(sort_order) || 0); }
     if (payment_url !== undefined) { updates.push('payment_url = ?'); params.push(payment_url === '' ? null : payment_url); }
     if (label !== undefined) { updates.push('button_label = ?'); params.push(label); }
